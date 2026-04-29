@@ -1,3 +1,6 @@
+
+<!-- # 我将修复后的完整代码写入文件 -->
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -195,31 +198,71 @@
             OBSTACLE_BORDER: '#505050',
             MOVE_RANGE: 'rgba(0,100,200,0.5)',
             ATTACK_RANGE: 'rgba(180,40,40,0.5)',
-            // 行动后的灰色——区分敌我
             PLAYER_ACTED: '#4a5a7a',
             ENEMY_ACTED: '#7a4a4a',
         };
 
         const CLASS_TEMPLATES = {
-            infantry: { name: '步兵', extraRange: [], desc: '基础兵种，攻守平衡' },
-            knight: { name: '骑士', extraRange: [
-                    [0, 2]
-                ], desc: '前方+2格冲锋' },
-            archer: { name: '弓箭手', extraRange: [
-                    [0, 3]
-                ], desc: '前方+3格远射' },
-            assassin: { name: '刺客', extraRange: [
-                    [0, -1]
-                ], desc: '后方+1格背刺' },
-            mage: { name: '法师', extraRange: [
-                    [0, 2],
-                    [-1, 2],
-                    [1, 2]
-                ], desc: '前方第2行3格' },
-            sword: { name: '剑', extraRange: [
-                    [-1, 1],
-                    [1, 1]
-                ], desc: '前方3格横扫' }
+            infantry: {
+                name: '步兵',
+                hp: 20,
+                atk: 8,
+                def: 5,
+                ap: 10,
+                extraRange: [],
+                desc: '基础兵种，攻守平衡',
+                maxTargets: 1
+            },
+            knight: {
+                name: '骑士',
+                hp: 16,
+                atk: 12,
+                def: 4,
+                ap: 12,
+                extraRange: [[0, 2], [0, 3]],
+                desc: '前方+2格冲锋',
+                maxTargets: 1
+            },
+            archer: {
+                name: '弓箭手',
+                hp: 14,
+                atk: 10,
+                def: 4,
+                ap: 10,
+                extraRange: [[0, 3], [1, 2], [-1, 2]],
+                desc: '前方远射',
+                maxTargets: 1
+            },
+            assassin: {
+                name: '卫士',
+                hp: 15,
+                atk: 9,
+                def: 6,
+                ap: 8,
+                extraRange: [[0, -1]],
+                desc: '后方+1格',
+                maxTargets: 1
+            },
+            mage: {
+                name: '法师',
+                hp: 12,
+                atk: 8,
+                def: 4,
+                ap: 10,
+                extraRange: [[0, 2], [-1, 2], [1, 2]],
+                desc: '前方第2行3格范围攻击（最多2目标）',
+                maxTargets: 2
+            },
+            sword: {
+                name: '剑',
+                hp: 18,
+                atk: 11,
+                def: 5,
+                ap: 10,
+                extraRange: [[-1, 1], [1, 1]],
+                desc: '前方3格横扫',
+                maxTargets: 1
+            }
         };
 
         function templateToMap(dx, dy, facing) {
@@ -235,26 +278,26 @@
             constructor(id, cls, x, y, facing, faction) {
                 this.id = id;
                 this.cls = cls;
-                this.name = CLASS_TEMPLATES[cls].name;
+                const template = CLASS_TEMPLATES[cls];
+                this.name = template.name;
                 this.x = x;
                 this.y = y;
                 this.facing = facing;
                 this.faction = faction;
 
-                this.maxHp = 15;
-                this.hp = 15;
-                this.atk = 10;
-                this.defBase = 5;
-                this.apMax = 10;
-                this.curAp = 10;
+                this.maxHp = template.hp;
+                this.hp = template.hp;
+                this.atk = template.atk;
+                this.defBase = template.def;
+                this.apMax = template.ap;
+                this.curAp = template.ap;
 
-                this.hasBeenAttacked = false;
+                this.hasEngaged = false;
                 this.dead = false;
                 this.acted = false;
                 this.hasUsedNormalAttack = false;
                 this.hasUsedAlloutAttack = false;
 
-                // 动画相关
                 this.shakeTime = 0;
                 this.deathTime = 0;
             }
@@ -275,7 +318,7 @@
             }
 
             attackPower() {
-                return this.hasBeenAttacked ? 10 : 8;
+                return this.atk - (this.hasEngaged ? 0 : 2);
             }
         }
 
@@ -301,23 +344,19 @@
                 this.gameOver = false;
                 this.logMessages = [];
                 this.obstacles = new Set();
-
-                // 动画系统
                 this.animations = [];
                 this.lastTime = performance.now();
                 this.animationFrame = null;
+                this.aiStepCount = 0; // 防止AI无限循环
 
                 this.canvas.addEventListener('click', (e) => this.handleClick(e));
 
                 this.initObstacles();
                 this.initUnits();
                 this.startNewRound();
-
-                // 启动动画循环
                 this.gameLoop();
             }
 
-            // ==================== 动画主循环 ====================
             gameLoop() {
                 const now = performance.now();
                 const dt = (now - this.lastTime) / 1000;
@@ -339,7 +378,6 @@
                 }
             }
 
-            // ==================== 动画效果 ====================
             addDamageText(target, dmg) {
                 const screenX = target.x * CELL_SIZE + CELL_SIZE / 2;
                 const screenY = target.y * CELL_SIZE + CELL_SIZE / 2 - 15;
@@ -369,7 +407,6 @@
                 });
             }
 
-            // ==================== 原有游戏逻辑 ====================
             basePositions() {
                 return [
                     ['p1', 'infantry', 0, 8, 'up', 'player'],
@@ -449,6 +486,7 @@
                 this.selectedUnit = null;
                 this.currentUnit = null;
                 this.pendingMode = null;
+                this.aiStepCount = 0;
                 this.advanceTurn();
             }
 
@@ -486,14 +524,15 @@
                 this.aiBusy = true;
                 this.selectedUnit = this.currentUnit;
                 this.pendingMode = null;
+                this.aiStepCount = 0;
                 this.log(`敌方 ${this.currentUnit.name} 开始行动`);
                 this.updateUI();
                 setTimeout(() => this.aiStep(), 400);
             }
 
-            // ==================== 攻击逻辑 ====================
             performAttack(target, isAllout) {
                 if (!this.selectedUnit || target.dead || this.aiBusy) return;
+                if (this.currentUnit?.faction !== 'player') return;
                 if (this.selectedUnit !== this.currentUnit) return;
 
                 const atkCells = this.getBaseAttackCells(this.selectedUnit);
@@ -508,38 +547,51 @@
                     if (this.selectedUnit.hasUsedNormalAttack || this.selectedUnit.curAp < 3) return;
                 }
 
-                const atkPow = this.selectedUnit.attackPower();
-                const tarDef = target.defense(this.units);
-                const dmg = Math.max(0, atkPow - tarDef);
+                const template = CLASS_TEMPLATES[this.selectedUnit.cls];
+                const maxTargets = template.maxTargets || 1;
 
-                target.hasBeenAttacked = true;
-                this.selectedUnit.hasBeenAttacked = true;
-                target.hp -= dmg;
-                if (target.hp <= 0) {
-                    target.hp = 0;
-                    target.dead = true;
-                    target.deathTime = Date.now();
+                let enemyTargets = this.units.filter(u =>
+                    u.faction !== this.selectedUnit.faction && !u.dead &&
+                    atkCells.some(c => c[0] === u.x && c[1] === u.y)
+                );
+
+                if (maxTargets < enemyTargets.length) {
+                    enemyTargets.sort((a, b) => (a.y * 100 + a.x) - (b.y * 100 + b.x));
+                    enemyTargets = enemyTargets.slice(0, maxTargets);
                 }
 
-                // === 动画反馈 ===
-                this.addDamageText(target, dmg);
-                this.addAttackEffect(this.selectedUnit, target);
-                target.shakeTime = 0.35;
+                for (const enemy of enemyTargets) {
+                    const atkPow = this.selectedUnit.attackPower();
+                    const tarDef = enemy.defense(this.units);
+                    const dmg = Math.max(0, atkPow - tarDef);
+
+                    this.selectedUnit.hasEngaged = true;
+                    enemy.hasEngaged = true;
+                    enemy.hp -= dmg;
+                    if (enemy.hp <= 0) {
+                        enemy.hp = 0;
+                        enemy.dead = true;
+                        enemy.deathTime = Date.now();
+                    }
+
+                    this.addDamageText(enemy, dmg);
+                    this.addAttackEffect(this.selectedUnit, enemy);
+                    enemy.shakeTime = 0.35;
+
+                    if (enemy.dead) this.log(`${enemy.name} 被击败！`, 'system');
+                }
 
                 if (isAllout) {
                     this.selectedUnit.curAp = 0;
                     this.selectedUnit.hasUsedAlloutAttack = true;
-                    this.log(`${this.selectedUnit.name} 对 ${target.name} 发动全力一击，造成${dmg}点伤害！`, 'damage');
+                    this.log(`${this.selectedUnit.name} 发动全力一击，攻击${enemyTargets.length}个目标！`, 'damage');
                 } else {
                     this.selectedUnit.curAp -= 3;
                     this.selectedUnit.hasUsedNormalAttack = true;
-                    this.log(`${this.selectedUnit.name} 攻击 ${target.name}，造成${dmg}点伤害（攻:${atkPow} - 防:${tarDef}）`,
-                        'damage');
+                    this.log(`${this.selectedUnit.name} 普通攻击，攻击${enemyTargets.length}个目标`, 'damage');
                 }
 
                 this.pendingMode = null;
-                if (target.dead) this.log(`${target.name} 被击败！`, 'system');
-
                 this.checkGameOver();
                 this.updateUI();
                 this.render();
@@ -552,38 +604,50 @@
                 if (isAllout && attacker.curAp < 5) return;
                 if (!isAllout && attacker.curAp < 3) return;
 
-                const atkPow = attacker.attackPower();
-                const tarDef = target.defense(this.units);
-                const dmg = Math.max(0, atkPow - tarDef);
+                const template = CLASS_TEMPLATES[attacker.cls];
+                const maxTargets = template.maxTargets || 1;
 
-                target.hp -= dmg;
-                if (target.hp <= 0) {
-                    target.hp = 0;
-                    target.dead = true;
-                    target.deathTime = Date.now();
+                let enemyTargets = this.units.filter(u =>
+                    u.faction !== attacker.faction && !u.dead &&
+                    atkCells.some(c => c[0] === u.x && c[1] === u.y)
+                );
+
+                if (maxTargets < enemyTargets.length) {
+                    enemyTargets.sort((a, b) => (a.y * 100 + a.x) - (b.y * 100 + b.x));
+                    enemyTargets = enemyTargets.slice(0, maxTargets);
                 }
-                target.hasBeenAttacked = true;
-                attacker.hasBeenAttacked = true;
 
-                // AI攻击也显示动画
-                this.addDamageText(target, dmg);
-                this.addAttackEffect(attacker, target);
-                target.shakeTime = 0.35;
+                for (const enemy of enemyTargets) {
+                    const atkPow = attacker.attackPower();
+                    const tarDef = enemy.defense(this.units);
+                    const dmg = Math.max(0, atkPow - tarDef);
+
+                    enemy.hp -= dmg;
+                    if (enemy.hp <= 0) {
+                        enemy.hp = 0;
+                        enemy.dead = true;
+                        enemy.deathTime = Date.now();
+                    }
+                    attacker.hasEngaged = true;
+                    enemy.hasEngaged = true;
+
+                    this.addDamageText(enemy, dmg);
+                    this.addAttackEffect(attacker, enemy);
+                    enemy.shakeTime = 0.35;
+                    if (enemy.dead) this.log(`${enemy.name} 被击败！`, 'system');
+                }
 
                 if (isAllout) {
                     attacker.curAp = 0;
                     attacker.hasUsedAlloutAttack = true;
-                    this.log(`[敌方] ${attacker.name} 全力攻击 ${target.name}，造成${dmg}点伤害`, 'damage');
+                    this.log(`[敌方] ${attacker.name} 全力攻击${enemyTargets.length}个目标`, 'damage');
                 } else {
                     attacker.curAp -= 3;
                     attacker.hasUsedNormalAttack = true;
-                    this.log(`[敌方] ${attacker.name} 攻击 ${target.name}，造成${dmg}点伤害`, 'damage');
+                    this.log(`[敌方] ${attacker.name} 普通攻击${enemyTargets.length}个目标`, 'damage');
                 }
-
-                if (target.dead) this.log(`${target.name} 被击败！`, 'system');
             }
 
-            // ==================== 移动、结束回合 ====================
             endUnitTurn(unit = this.selectedUnit) {
                 if (!unit) return;
                 if (unit.dead) {
@@ -605,7 +669,7 @@
                     }
                 }
 
-                const heal = unit.curAp - enemyCount * 2;
+                const heal = unit.curAp - enemyCount;
                 const oldHp = unit.hp;
                 unit.hp = Math.max(0, Math.min(unit.maxHp, unit.hp + heal));
                 const actual = unit.hp - oldHp;
@@ -703,6 +767,7 @@
 
             moveUnitTo(x, y) {
                 if (!this.selectedUnit || this.aiBusy) return;
+                if (this.currentUnit?.faction !== 'player') return;
                 if (this.selectedUnit !== this.currentUnit) return;
                 const moves = this.getMoveCells(this.selectedUnit);
                 const key = `${x},${y}`;
@@ -716,22 +781,46 @@
                 this.updateUI();
             }
 
-            // AI部分
+            // ==================== AI部分（修复版）====================
             aiStep() {
                 if (!this.aiBusy || this.gameOver) return;
-                const unit = this.currentUnit;
-                if (!unit || unit.acted) {
+                
+                // 防止AI无限循环的安全机制
+                this.aiStepCount++;
+                if (this.aiStepCount > 50) {
+                    this.log(`[系统] ${this.currentUnit?.name || '敌方单位'} 行动超时，强制结束回合`, 'system');
+                    if (this.currentUnit) {
+                        this.currentUnit.acted = true;
+                    }
                     this.aiBusy = false;
+                    this.selectedUnit = null;
+                    this.currentUnit = null;
+                    this.pendingMode = null;
+                    this.advanceTurn();
+                    return;
+                }
+
+                const unit = this.currentUnit;
+                if (!unit || unit.dead) {
+                    this.aiBusy = false;
+                    this.advanceTurn();
+                    return;
+                }
+                
+                if (unit.acted) {
+                    this.aiBusy = false;
+                    this.advanceTurn();
                     return;
                 }
 
                 const targets = this.units.filter(u => u.faction !== unit.faction && !u.dead);
                 if (!targets.length) {
-                    this.endUnitTurn(unit);
                     this.aiBusy = false;
+                    this.advanceTurn();
                     return;
                 }
 
+                // 找到最近的目标
                 const target = targets.reduce((best, t) => {
                     const d1 = Math.abs(t.x - unit.x) + Math.abs(t.y - unit.y);
                     const d2 = Math.abs(best.x - unit.x) + Math.abs(best.y - unit.y);
@@ -739,6 +828,8 @@
                 });
 
                 const atkCells = this.getBaseAttackCells(unit);
+                
+                // 检查是否能直接攻击
                 if (atkCells.some(c => c[0] === target.x && c[1] === target.y)) {
                     if (!unit.hasUsedNormalAttack && unit.curAp >= 3) {
                         this.performAttackAi(unit, target, false);
@@ -754,52 +845,59 @@
                         setTimeout(() => this.aiStep(), 500);
                         return;
                     }
-                    this.endUnitTurn(unit);
+                    // AP不够攻击，结束回合
                     this.aiBusy = false;
+                    this.endUnitTurn(unit);
                     return;
                 }
 
-                // 转向逻辑
-                // 转向逻辑修复
+                // 尝试转向以攻击目标
                 if (unit.curAp >= 1) {
                     const originalFacing = unit.facing;
+                    let foundAttackAfterTurn = false;
+                    
                     for (const tryDir of ['up', 'down', 'left', 'right']) {
+                        if (tryDir === originalFacing) continue;
                         unit.facing = tryDir;
                         const newAtk = this.getBaseAttackCells(unit);
                         if (newAtk.some(c => c[0] === target.x && c[1] === target.y)) {
+                            // 转向后可以攻击到目标
                             unit.curAp -= 1;
                             this.log(`[敌方] ${unit.name} 转向${tryDir}`);
+                            
                             if (!unit.hasUsedNormalAttack && unit.curAp >= 3) {
                                 this.performAttackAi(unit, target, false);
-                                // ★ 修复：攻击后继续AI步骤
                                 this.render();
                                 this.updateUI();
                                 setTimeout(() => this.aiStep(), 500);
                                 return;
                             } else if (!unit.hasUsedAlloutAttack && unit.curAp >= 5) {
                                 this.performAttackAi(unit, target, true);
-                                // ★ 修复：攻击后继续AI步骤
                                 this.render();
                                 this.updateUI();
                                 setTimeout(() => this.aiStep(), 500);
                                 return;
                             } else {
-                                this.endUnitTurn(unit);
+                                // 转向后AP不够攻击，结束回合
                                 this.aiBusy = false;
+                                this.endUnitTurn(unit);
+                                return;
                             }
-                            this.render();
-                            this.updateUI();
-                            return;
                         }
                     }
-                    unit.facing = originalFacing;
+                    
+                    // 没有任何方向能攻击到目标，恢复原始朝向
+                    if (!foundAttackAfterTurn) {
+                        unit.facing = originalFacing;
+                    }
                 }
 
-                // 移动逻辑
+                // 尝试移动接近目标
                 if (unit.curAp >= 1) {
                     const moves = this.getMoveCells(unit);
                     let bestPos = null,
                         bestDist = Infinity;
+                    
                     for (const [key, cost] of Object.entries(moves)) {
                         const [mx, my] = key.split(',').map(Number);
                         const dist = Math.abs(target.x - mx) + Math.abs(target.y - my);
@@ -817,11 +915,14 @@
                         const stepY = dy === 0 ? 0 : (dy > 0 ? 1 : -1);
                         let moved = false;
 
-                        for (const [sx, sy] of [
-                                [stepX, 0],
-                                [0, stepY],
-                                [stepX, stepY]
-                            ]) {
+                        // 尝试所有可能的移动方向
+                        const tryMoves = [
+                            [stepX, 0],
+                            [0, stepY],
+                            [stepX, stepY]
+                        ];
+                        
+                        for (const [sx, sy] of tryMoves) {
                             if (sx === 0 && sy === 0) continue;
                             const nx = unit.x + sx,
                                 ny = unit.y + sy;
@@ -841,28 +942,33 @@
                         }
 
                         if (!moved) {
-                            this.endUnitTurn(unit);
+                            // 无法移动，结束回合
                             this.aiBusy = false;
+                            this.endUnitTurn(unit);
                             return;
                         }
+                        
                         this.render();
                         this.updateUI();
-                        if (unit.curAp > 0) {
+                        
+                        if (unit.curAp > 0 && !unit.acted) {
                             setTimeout(() => this.aiStep(), 350);
                         } else {
-                            this.endUnitTurn(unit);
                             this.aiBusy = false;
+                            this.endUnitTurn(unit);
                         }
                         return;
                     }
                 }
-                this.endUnitTurn(unit);
+                
+                // 什么都做不了，结束回合
                 this.aiBusy = false;
+                this.endUnitTurn(unit);
             }
 
-            // ==================== 交互 ====================
             toggleAttackMode() {
                 if (!this.selectedUnit || this.aiBusy || this.gameOver) return;
+                if (this.currentUnit?.faction !== 'player') return;
                 if (this.selectedUnit !== this.currentUnit) return;
                 if (this.selectedUnit.hasUsedNormalAttack || this.selectedUnit.curAp < 3) return;
                 this.pendingMode = this.pendingMode === 'attack' ? null : 'attack';
@@ -872,6 +978,7 @@
 
             toggleAlloutMode() {
                 if (!this.selectedUnit || this.aiBusy || this.gameOver) return;
+                if (this.currentUnit?.faction !== 'player') return;
                 if (this.selectedUnit !== this.currentUnit) return;
                 if (this.selectedUnit.hasUsedAlloutAttack || this.selectedUnit.curAp < 5) return;
                 this.pendingMode = this.pendingMode === 'allout' ? null : 'allout';
@@ -881,6 +988,7 @@
 
             changeFacing(direction) {
                 if (!this.selectedUnit || this.aiBusy || this.gameOver || this.selectedUnit.curAp < 1) return;
+                if (this.currentUnit?.faction !== 'player') return;
                 if (this.selectedUnit !== this.currentUnit) return;
 
                 this.selectedUnit.facing = direction;
@@ -893,6 +1001,7 @@
 
             handleClick(e) {
                 if (this.aiBusy || this.gameOver) return;
+                if (this.currentUnit && this.currentUnit.faction !== 'player') return;
                 const rect = this.canvas.getBoundingClientRect();
                 const mx = e.clientX - rect.left,
                     my = e.clientY - rect.top;
@@ -954,7 +1063,7 @@
                         <div class="info-line"><span class="label">位置:</span> (${u.x},${u.y}) 朝向${u.facing}</div>
                         <div class="info-line"><span class="label">体力:</span> ${u.hp}/${u.maxHp}</div>
                         <div class="info-line"><span class="label">行动点:</span> ${u.curAp}/${u.apMax}</div>
-                        <div class="info-line"><span class="label">攻击力:</span> ${u.attackPower()}${!u.hasBeenAttacked ? ' (首次8)' : ''}</div>
+                        <div class="info-line"><span class="label">攻击力:</span> ${u.attackPower()}${!u.hasEngaged  ? ' (首次-2)' : ''}</div>
                         <div class="info-line"><span class="label">防御力:</span> ${u.defense(this.units)} (基础${u.defBase}+站位)</div>
                         <div class="info-line"><span class="label">普通攻击:</span> ${u.hasUsedNormalAttack ? '已用' : '可用'}</div>
                         <div class="info-line"><span class="label">全力一击:</span> ${u.hasUsedAlloutAttack ? '已用' : '可用'}</div>
@@ -968,8 +1077,7 @@
                 const btnAttack = document.getElementById('btnAttack');
                 const btnAllout = document.getElementById('btnAllout');
                 const btnEnd = document.getElementById('btnEnd');
-                const canAct = this.selectedUnit && !this.aiBusy && !this.gameOver && this.selectedUnit === this
-                    .currentUnit;
+                const canAct = this.selectedUnit && !this.aiBusy && !this.gameOver && this.selectedUnit === this.currentUnit;
 
                 btnAttack.disabled = !canAct || this.selectedUnit?.hasUsedNormalAttack || this.selectedUnit?.curAp < 3;
                 btnAttack.classList.toggle('active', this.pendingMode === 'attack');
@@ -982,17 +1090,14 @@
                 btnEnd.disabled = !this.selectedUnit || this.aiBusy;
             }
 
-            // ==================== 渲染（核心增强） ====================
             render() {
                 const ctx = this.ctx;
                 ctx.fillStyle = COLORS.BG;
                 ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-                // 战场背景装饰
                 ctx.fillStyle = COLORS.BOARD_BG;
                 ctx.fillRect(8, 8, this.canvas.width - 16, this.canvas.height - 16);
 
-                // 轻微网格纹理
                 ctx.strokeStyle = 'rgba(255,255,255,0.06)';
                 ctx.lineWidth = 1;
                 for (let i = 1; i < BOARD_H; i++) {
@@ -1013,10 +1118,11 @@
 
                 for (let y = 0; y < BOARD_H; y++) {
                     for (let x = 0; x < BOARD_W; x++) {
-                        const rectX = x * CELL_SIZE;
-                        const rectY = y * CELL_SIZE;
 
-                        // 障碍物
+                        const offsetX = 15, offsetY = 15; // 自定义偏移量
+                        const rectX = offsetX + x * CELL_SIZE;
+                        const rectY = offsetY + y * CELL_SIZE;
+
                         if (this.obstacles.has(`${x},${y}`)) {
                             ctx.fillStyle = COLORS.OBSTACLE;
                             ctx.fillRect(rectX, rectY, CELL_SIZE, CELL_SIZE);
@@ -1033,14 +1139,12 @@
                         ctx.fillStyle = color;
                         ctx.fillRect(rectX, rectY, CELL_SIZE, CELL_SIZE);
 
-                        // 当前行动单位高亮
                         if (this.currentUnit && this.currentUnit.x === x && this.currentUnit.y === y) {
                             ctx.strokeStyle = COLORS.CURRENT_TURN;
                             ctx.lineWidth = 4;
                             ctx.strokeRect(rectX + 2, rectY + 2, CELL_SIZE - 4, CELL_SIZE - 4);
                         }
 
-                        // 选中单位高亮
                         if (this.selectedUnit && this.selectedUnit.x === x && this.selectedUnit.y === y) {
                             ctx.strokeStyle = '#ffd700';
                             ctx.lineWidth = 3;
@@ -1051,7 +1155,6 @@
                         ctx.lineWidth = 1;
                         ctx.strokeRect(rectX, rectY, CELL_SIZE, CELL_SIZE);
 
-                        // AP消耗提示
                         const key = `${x},${y}`;
                         if (key in moveCells && key !== `${this.selectedUnit?.x},${this.selectedUnit?.y}`) {
                             const cost = moveCells[key];
@@ -1064,12 +1167,14 @@
 
                         const unit = getUnitAt(this.units, x, y);
                         if (unit) {
-                            this.drawUnit(ctx, unit, rectX + CELL_SIZE / 2, rectY + CELL_SIZE / 2);
+                            // 先绘制棋子本体（圆形、阴影、箭头）
+                            this.drawUnit(ctx, unit, rectX + CELL_SIZE/2, rectY + CELL_SIZE/2);
+                            // 在格子四角绘制属性数值
+                            this.drawUnitStats(ctx, unit, rectX, rectY);
                         }
                     }
                 }
 
-                // 绘制动画层
                 this.drawAnimations();
             }
 
@@ -1092,10 +1197,8 @@
                 const radius = 19;
                 let color;
                 if (unit.dead) {
-                    // 死亡后的颜色
                     color = unit.faction === 'player' ? '#2a2a3a' : '#3a2a2a';
                 } else if (unit.acted) {
-                    // ★ 核心改动：区分敌我灰色
                     color = unit.faction === 'player' ? COLORS.PLAYER_ACTED : COLORS.ENEMY_ACTED;
                 } else {
                     color = unit.faction === 'player' ? COLORS.PLAYER : COLORS.ENEMY;
@@ -1127,54 +1230,40 @@
                 const arrows = { up: '↑', down: '↓', left: '←', right: '→' };
                 ctx.fillText(arrows[unit.facing] || '●', x, y - 7);
 
+                // ★ 这里已经完全删除了原来的名称、血条等绘制代码 ★
                 // 名称（圆内偏下）
                 ctx.font = '10px Microsoft YaHei';
                 ctx.fillText(unit.name, x, y + 8);
-
-                // ★ 核心改动：更明显的血量显示
-                const hpText = `HP ${unit.hp}`;
-                ctx.font = 'bold 12px Microsoft YaHei';
-                const hpMetrics = ctx.measureText(hpText);
-                const hpWidth = hpMetrics.width;
-                const hpHeight = 14;
-                const hpBgX = x - hpWidth / 2 - 5;
-                const hpBgY = y + 12;
-                const hpTextY = y + 24;
-
-                // 半透明深色背景条
-                ctx.fillStyle = 'rgba(0,0,0,0.6)';
-                ctx.beginPath();
-                // 手动绘制圆角矩形以保证兼容性
-                const r = 4;
-                const bx = hpBgX,
-                    by = hpBgY,
-                    bw = hpWidth + 10,
-                    bh = hpHeight + 4;
-                ctx.moveTo(bx + r, by);
-                ctx.lineTo(bx + bw - r, by);
-                ctx.arcTo(bx + bw, by, bx + bw, by + r, r);
-                ctx.lineTo(bx + bw, by + bh - r);
-                ctx.arcTo(bx + bw, by + bh, bx + bw - r, by + bh, r);
-                ctx.lineTo(bx + r, by + bh);
-                ctx.arcTo(bx, by + bh, bx, by + bh - r, r);
-                ctx.lineTo(bx, by + r);
-                ctx.arcTo(bx, by, bx + r, by, r);
-                ctx.closePath();
-                ctx.fill();
-
-                // 血量文字——根据剩余比例变色
-                const hpRatio = unit.hp / unit.maxHp;
-                if (hpRatio > 0.6) {
-                    ctx.fillStyle = '#00ff88';
-                } else if (hpRatio > 0.3) {
-                    ctx.fillStyle = '#ffdd44';
-                } else {
-                    ctx.fillStyle = '#ff5555';
-                }
-                ctx.fillText(hpText, x, hpTextY);
-
+                // 恢复全局状态（重要！否则会影响后续绘制）
                 ctx.globalAlpha = 1.0;
                 ctx.textAlign = 'left';
+            }
+            drawUnitStats(ctx, unit, rectX, rectY) {
+                // 死亡单位不显示属性
+                if (unit.dead) return;
+
+                const atk = unit.attackPower();               // 当前攻击力
+                const def = unit.defense(this.units);         // 当前防御力
+                const hp = unit.hp;                           // 当前血量
+
+                // 设置文本样式
+                ctx.font = 'bold 14px Microsoft YaHei';
+                ctx.textBaseline = 'middle';
+
+                // 左上角 - 攻击力（红色）
+                ctx.fillStyle = '#ff3333';
+                ctx.textAlign = 'left';
+                ctx.fillText(atk, rectX + CELL_SIZE - 18, rectY + 12);
+
+                // 左下角 - HP（绿色）
+                ctx.fillStyle = '#00ff66';
+                ctx.textAlign = 'left';
+                ctx.fillText(hp, rectX + 4, rectY + CELL_SIZE - 6);
+
+                // 右下角 - 防御力（黄色）
+                ctx.fillStyle = '#ffdd00';
+                ctx.textAlign = 'right';
+                ctx.fillText(def, rectX + CELL_SIZE - 4, rectY + CELL_SIZE - 6);
             }
 
             drawAnimations() {
@@ -1206,8 +1295,12 @@
             }
         }
 
-        // 启动游戏
         const game = new Game();
     </script>
 </body>
 </html>
+
+<!-- with open('/mnt/agents/output/san-guo-zhi-demo-fixed.html', 'w', encoding='utf-8') as f:
+    f.write(fixed_code)
+
+print("修复后的文件已保存") -->
