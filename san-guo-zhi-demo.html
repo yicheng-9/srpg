@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>战棋Demo · HTML5版</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             background: #1a1a2e;
             color: #fff;
@@ -21,7 +25,10 @@
             gap: 20px;
             padding: 20px;
         }
-        canvas { border-radius: 8px; cursor: pointer; }
+        canvas {
+            border-radius: 8px;
+            cursor: pointer;
+        }
         #panel {
             width: 320px;
             background: #0f3460;
@@ -39,19 +46,32 @@
             border-radius: 6px;
             text-align: center;
         }
-        .player-turn { background: #2962ff; color: #fff; }
-        .enemy-turn { background: #d50000; color: #fff; }
-        .game-over { background: #ff5050; color: #fff; }
+        .player-turn {
+            background: #2962ff;
+            color: #fff;
+        }
+        .enemy-turn {
+            background: #d50000;
+            color: #fff;
+        }
+        .game-over {
+            background: #ff5050;
+            color: #fff;
+        }
         #unitInfo {
-            background: rgba(0,0,0,0.3);
+            background: rgba(0, 0, 0, 0.3);
             padding: 12px;
             border-radius: 6px;
             min-height: 180px;
             font-size: 14px;
             line-height: 1.8;
         }
-        #unitInfo .info-line { margin: 4px 0; }
-        #unitInfo .label { color: #aaa; }
+        #unitInfo .info-line {
+            margin: 4px 0;
+        }
+        #unitInfo .label {
+            color: #aaa;
+        }
         #buttons {
             display: flex;
             flex-wrap: wrap;
@@ -68,17 +88,42 @@
             transition: all 0.2s;
             color: #fff;
         }
-        .btn:hover { transform: translateY(-2px); opacity: 0.9; }
-        .btn:active { transform: translateY(0); }
-        .btn-end { background: #2962ff; }
-        .btn-attack { background: #ff3232; }
-        .btn-attack.active { background: #ff0000; box-shadow: 0 0 10px #ff0000; }
-        .btn-allout { background: #ff8c00; }
-        .btn-allout.active { background: #ff6600; box-shadow: 0 0 10px #ff6600; }
-        .btn-dir { background: #505064; width: 60px; padding: 6px; }
-        .btn:disabled { background: #444; cursor: not-allowed; opacity: 0.5; }
+        .btn:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-end {
+            background: #2962ff;
+        }
+        .btn-attack {
+            background: #ff3232;
+        }
+        .btn-attack.active {
+            background: #ff0000;
+            box-shadow: 0 0 10px #ff0000;
+        }
+        .btn-allout {
+            background: #ff8c00;
+        }
+        .btn-allout.active {
+            background: #ff6600;
+            box-shadow: 0 0 10px #ff6600;
+        }
+        .btn-dir {
+            background: #505064;
+            width: 60px;
+            padding: 6px;
+        }
+        .btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
         #log {
-            background: rgba(0,0,0,0.4);
+            background: rgba(0, 0, 0, 0.4);
             border: 1px solid #505064;
             border-radius: 6px;
             padding: 10px;
@@ -88,959 +133,1070 @@
             line-height: 1.6;
             max-height: 200px;
         }
-        #log .log-entry { margin: 2px 0; color: #aaa; }
-        #log .log-entry.damage { color: #ff6b6b; }
-        #log .log-entry.heal { color: #00e676; }
-        #log .log-entry.system { color: #ffd700; }
-        .section-title { color: #ffd700; font-size: 14px; margin: 8px 0 4px; }
+        #log .log-entry {
+            margin: 2px 0;
+            color: #aaa;
+        }
+        #log .log-entry.damage {
+            color: #ff6b6b;
+        }
+        #log .log-entry.heal {
+            color: #00e676;
+        }
+        #log .log-entry.system {
+            color: #ffd700;
+        }
+        .section-title {
+            color: #ffd700;
+            font-size: 14px;
+            margin: 8px 0 4px;
+        }
     </style>
 </head>
 <body>
-<div id="gameContainer">
-    <canvas id="board" width="456" height="560"></canvas>
-    <div id="panel">
-        <div id="turnInfo">🛡️ 玩家行动 (第1回合)</div>
-        <div id="unitInfo">
-            <div style="color:#aaa;text-align:center;padding:20px;">点击己方单位开始行动</div>
+    <div id="gameContainer">
+        <canvas id="board" width="456" height="560"></canvas>
+        <div id="panel">
+            <div id="turnInfo">🛡️ 玩家行动 (第1回合)</div>
+            <div id="unitInfo">
+                <div style="color:#aaa;text-align:center;padding:20px;">点击己方单位开始行动</div>
+            </div>
+            <div class="section-title">行动指令</div>
+            <div id="buttons">
+                <button class="btn btn-end" id="btnEnd" onclick="game.endUnitTurn()">结束行动</button>
+                <button class="btn btn-attack" id="btnAttack" onclick="game.toggleAttackMode()">普通攻击</button>
+                <button class="btn btn-allout" id="btnAllout" onclick="game.toggleAlloutMode()">全力一击</button>
+            </div>
+            <div id="buttons-dir" style="display:flex;gap:5px;justify-content:center;">
+                <button class="btn btn-dir" onclick="game.changeFacing('up')">↑上</button>
+                <button class="btn btn-dir" onclick="game.changeFacing('down')">↓下</button>
+                <button class="btn btn-dir" onclick="game.changeFacing('left')">←左</button>
+                <button class="btn btn-dir" onclick="game.changeFacing('right')">→右</button>
+            </div>
+            <div class="section-title">战斗日志</div>
+            <div id="log"></div>
         </div>
-        <div class="section-title">行动指令</div>
-        <div id="buttons">
-            <button class="btn btn-end" id="btnEnd" onclick="game.endUnitTurn()">结束行动</button>
-            <button class="btn btn-attack" id="btnAttack" onclick="game.toggleAttackMode()">普通攻击</button>
-            <button class="btn btn-allout" id="btnAllout" onclick="game.toggleAlloutMode()">全力一击</button>
-        </div>
-        <div id="buttons-dir" style="display:flex;gap:5px;justify-content:center;">
-            <button class="btn btn-dir" onclick="game.changeFacing('up')">↑上</button>
-            <button class="btn btn-dir" onclick="game.changeFacing('down')">↓下</button>
-            <button class="btn btn-dir" onclick="game.changeFacing('left')">←左</button>
-            <button class="btn btn-dir" onclick="game.changeFacing('right')">→右</button>
-        </div>
-        <div class="section-title">战斗日志</div>
-        <div id="log"></div>
     </div>
-</div>
-<script>
-// ==================== 配置 ====================
-const BOARD_W = 8, BOARD_H = 10, CELL_SIZE = 52;
-const COLORS = {
-    BG: '#0a1428',
-    BOARD_BG: '#1a2338',
-    CELL: '#2a2f45',
-    CELL_BORDER: '#3f4559',
-    CURRENT_TURN: '#ffd700',
-    PLAYER: '#2962ff',
-    ENEMY: '#d50000',
-    HP_GREEN: '#00e676',
-    OBSTACLE: '#1f2128',
-    OBSTACLE_BORDER: '#505050',
-    MOVE_RANGE: 'rgba(0,100,200,0.5)',
-    ATTACK_RANGE: 'rgba(180,40,40,0.5)'
-};
+    <script>
+        // ==================== 配置 ====================
+        const BOARD_W = 8,
+            BOARD_H = 10,
+            CELL_SIZE = 52;
+        const COLORS = {
+            BG: '#0a1428',
+            BOARD_BG: '#1a2338',
+            CELL: '#2a2f45',
+            CELL_BORDER: '#3f4559',
+            CURRENT_TURN: '#ffd700',
+            PLAYER: '#2962ff',
+            ENEMY: '#d50000',
+            HP_GREEN: '#00e676',
+            OBSTACLE: '#1f2128',
+            OBSTACLE_BORDER: '#505050',
+            MOVE_RANGE: 'rgba(0,100,200,0.5)',
+            ATTACK_RANGE: 'rgba(180,40,40,0.5)',
+            // 行动后的灰色——区分敌我
+            PLAYER_ACTED: '#4a5a7a',
+            ENEMY_ACTED: '#7a4a4a',
+        };
 
-const CLASS_TEMPLATES = {
-    infantry: { name: '步兵', extraRange: [], desc: '基础兵种，攻守平衡' },
-    knight:   { name: '骑士', extraRange: [[0, 2]], desc: '前方+2格冲锋' },
-    archer:   { name: '弓箭手', extraRange: [[0, 3]], desc: '前方+3格远射' },
-    assassin: { name: '刺客', extraRange: [[0, -1]], desc: '后方+1格背刺' },
-    mage:     { name: '法师', extraRange: [[0,2],[-1,2],[1,2]], desc: '前方第2行3格' },
-    sword:    { name: '剑',   extraRange: [[-1,1],[1,1]], desc: '前方3格横扫' }
-};
+        const CLASS_TEMPLATES = {
+            infantry: { name: '步兵', extraRange: [], desc: '基础兵种，攻守平衡' },
+            knight: { name: '骑士', extraRange: [
+                    [0, 2]
+                ], desc: '前方+2格冲锋' },
+            archer: { name: '弓箭手', extraRange: [
+                    [0, 3]
+                ], desc: '前方+3格远射' },
+            assassin: { name: '刺客', extraRange: [
+                    [0, -1]
+                ], desc: '后方+1格背刺' },
+            mage: { name: '法师', extraRange: [
+                    [0, 2],
+                    [-1, 2],
+                    [1, 2]
+                ], desc: '前方第2行3格' },
+            sword: { name: '剑', extraRange: [
+                    [-1, 1],
+                    [1, 1]
+                ], desc: '前方3格横扫' }
+        };
 
-function templateToMap(dx, dy, facing) {
-    if (facing === 'up')    return [dx, -dy];
-    if (facing === 'down')  return [-dx, dy];
-    if (facing === 'left')  return [-dy, -dx];
-    if (facing === 'right') return [dy, dx];
-    return [dx, dy];
-}
-
-// ==================== 单位类 ====================
-class Unit {
-    constructor(id, cls, x, y, facing, faction) {
-        this.id = id; 
-        this.cls = cls; 
-        this.name = CLASS_TEMPLATES[cls].name;
-        this.x = x; this.y = y; 
-        this.facing = facing; 
-        this.faction = faction;
-        
-        this.maxHp = 15; this.hp = 15; 
-        this.atk = 10; this.defBase = 5;
-        this.apMax = 10; this.curAp = 10;
-        
-        this.hasBeenAttacked = false; 
-        this.dead = false;
-        this.acted = false; 
-        this.hasUsedNormalAttack = false; 
-        this.hasUsedAlloutAttack = false;
-        
-        // 动画相关
-        this.shakeTime = 0;
-        this.deathTime = 0;
-    }
-
-    defense(units) {
-        let bonus = 0;
-        const neighbors = [
-            getUnitAt(units, this.x - 1, this.y),
-            getUnitAt(units, this.x + 1, this.y),
-            getUnitAt(units, this.x, this.y - 1),
-            getUnitAt(units, this.x, this.y + 1)
-        ];
-        for (const u of neighbors) {
-            if (u && u.faction === this.faction) bonus++;
+        function templateToMap(dx, dy, facing) {
+            if (facing === 'up') return [dx, -dy];
+            if (facing === 'down') return [-dx, dy];
+            if (facing === 'left') return [-dy, -dx];
+            if (facing === 'right') return [dy, dx];
+            return [dx, dy];
         }
-        bonus = Math.min(bonus, 3);
-        return this.defBase + bonus;
-    }
 
-    attackPower() {
-        return this.hasBeenAttacked ? 10 : 8;
-    }
-}
+        // ==================== 单位类 ====================
+        class Unit {
+            constructor(id, cls, x, y, facing, faction) {
+                this.id = id;
+                this.cls = cls;
+                this.name = CLASS_TEMPLATES[cls].name;
+                this.x = x;
+                this.y = y;
+                this.facing = facing;
+                this.faction = faction;
 
-function getUnitAt(units, x, y) {
-    for (const u of units) {
-        if (u.x === x && u.y === y && !u.dead) return u;
-    }
-    return null;
-}
+                this.maxHp = 15;
+                this.hp = 15;
+                this.atk = 10;
+                this.defBase = 5;
+                this.apMax = 10;
+                this.curAp = 10;
 
-// ==================== 游戏主类 ====================
-class Game {
-    constructor() {
-        this.canvas = document.getElementById('board');
-        this.ctx = this.canvas.getContext('2d');
-        this.units = [];
-        this.selectedUnit = null;
-        this.currentUnit = null;
-        this.pendingMode = null;
-        this.turnCount = 1;
-        this.actionOrder = [];
-        this.aiBusy = false;
-        this.gameOver = false;
-        this.logMessages = [];
-        this.obstacles = new Set();
-        
-        // 动画系统
-        this.animations = [];
-        this.lastTime = performance.now();
-        this.animationFrame = null;
+                this.hasBeenAttacked = false;
+                this.dead = false;
+                this.acted = false;
+                this.hasUsedNormalAttack = false;
+                this.hasUsedAlloutAttack = false;
 
-        this.canvas.addEventListener('click', (e) => this.handleClick(e));
-        
-        this.initObstacles();
-        this.initUnits();
-        this.startNewRound();
-        
-        // 启动动画循环
-        this.gameLoop();
-    }
-
-    // ==================== 动画主循环 ====================
-    gameLoop() {
-        const now = performance.now();
-        const dt = (now - this.lastTime) / 1000;
-        this.lastTime = now;
-
-        this.updateAnimations(dt);
-        this.render();
-
-        this.animationFrame = requestAnimationFrame(() => this.gameLoop());
-    }
-
-    updateAnimations(dt) {
-        for (let i = this.animations.length - 1; i >= 0; i--) {
-            const a = this.animations[i];
-            a.time += dt;
-            if (a.time >= a.duration) {
-                this.animations.splice(i, 1);
+                // 动画相关
+                this.shakeTime = 0;
+                this.deathTime = 0;
             }
-        }
-    }
 
-    // ==================== 动画效果 ====================
-    addDamageText(target, dmg) {
-        const screenX = target.x * CELL_SIZE + CELL_SIZE / 2;
-        const screenY = target.y * CELL_SIZE + CELL_SIZE / 2 - 15;
-        
-        this.animations.push({
-            type: 'damage',
-            value: dmg,
-            screenX: screenX,
-            screenY: screenY,
-            time: 0,
-            duration: 1.1
-        });
-    }
+            defense(units) {
+                let bonus = 0;
+                const neighbors = [
+                    getUnitAt(units, this.x - 1, this.y),
+                    getUnitAt(units, this.x + 1, this.y),
+                    getUnitAt(units, this.x, this.y - 1),
+                    getUnitAt(units, this.x, this.y + 1)
+                ];
+                for (const u of neighbors) {
+                    if (u && u.faction === this.faction) bonus++;
+                }
+                bonus = Math.min(bonus, 3);
+                return this.defBase + bonus;
+            }
 
-    addAttackEffect(attacker, target) {
-        const ax = attacker.x * CELL_SIZE + CELL_SIZE / 2;
-        const ay = attacker.y * CELL_SIZE + CELL_SIZE / 2;
-        const tx = target.x * CELL_SIZE + CELL_SIZE / 2;
-        const ty = target.y * CELL_SIZE + CELL_SIZE / 2;
-
-        this.animations.push({
-            type: 'attackEffect',
-            screenX: (ax + tx) / 2,
-            screenY: (ay + ty) / 2 - 10,
-            time: 0,
-            duration: 0.45
-        });
-    }
-
-    // ==================== 原有游戏逻辑（略有调整） ====================
-    basePositions() {
-        return [
-            ['p1','infantry',0,8,'up','player'], ['p2','knight',3,8,'up','player'],
-            ['p3','archer',4,8,'up','player'],   ['p4','mage',5,8,'up','player'],
-            ['p5','assassin',7,8,'up','player'],['p6','sword',2,8,'up','player'],
-            ['e1','infantry',0,1,'down','enemy'],['e2','knight',3,1,'down','enemy'],
-            ['e3','archer',4,1,'down','enemy'],  ['e4','mage',5,1,'down','enemy'],
-            ['e5','assassin',7,1,'down','enemy'],['e6','sword',2,1,'down','enemy']
-        ];
-    }
-
-    initObstacles() {
-        const allPos = [];
-        for (let x = 0; x < BOARD_W; x++) {
-            for (let y = 0; y < BOARD_H; y++) allPos.push([x, y]);
-        }
-        const unitPos = this.basePositions().map(p => [p[2], p[3]]);
-        const available = allPos.filter(p => !unitPos.some(up => up[0] === p[0] && up[1] === p[1]));
-        const count = Math.min(6, available.length);
-        for (let i = 0; i < count; i++) {
-            const idx = Math.floor(Math.random() * available.length);
-            const [x, y] = available.splice(idx, 1)[0];
-            this.obstacles.add(`${x},${y}`);
-        }
-    }
-
-    initUnits() {
-        this.units = this.basePositions().map(args => new Unit(...args));
-    }
-
-    log(msg, type = '') {
-        this.logMessages.push({ msg, type });
-        if (this.logMessages.length > 50) this.logMessages.shift();
-        this.updateLog();
-    }
-
-    updateLog() {
-        const logEl = document.getElementById('log');
-        logEl.innerHTML = this.logMessages.slice(-12).map(entry => 
-            `<div class="log-entry ${entry.type}">${entry.msg}</div>`
-        ).join('');
-        logEl.scrollTop = logEl.scrollHeight;
-    }
-
-    // ... 其他原有方法保持不变（buildActionOrder, getNextActiveUnit, startNewRound 等）...
-    buildActionOrder() {
-        const players = this.units.filter(u => u.faction === 'player' && !u.dead);
-        const enemies = this.units.filter(u => u.faction === 'enemy' && !u.dead);
-        const order = [];
-        const maxLen = Math.max(players.length, enemies.length);
-        for (let i = 0; i < maxLen; i++) {
-            if (i < players.length) order.push(players[i]);
-            if (i < enemies.length) order.push(enemies[i]);
-        }
-        return order;
-    }
-
-    getNextActiveUnit() {
-        for (const u of this.actionOrder) {
-            if (!u.acted && !u.dead) return u;
-        }
-        return null;
-    }
-
-    startNewRound() {
-        this.actionOrder = this.buildActionOrder();
-        for (const u of this.units) {
-            u.acted = false;
-            u.hasUsedNormalAttack = false;
-            u.hasUsedAlloutAttack = false;
-        }
-        this.selectedUnit = null;
-        this.currentUnit = null;
-        this.pendingMode = null;
-        this.advanceTurn();
-    }
-
-    advanceTurn() {
-        if (this.gameOver) return;
-        const nextUnit = this.getNextActiveUnit();
-        if (!nextUnit) {
-            this.turnCount++;
-            this.log(`=== 第${this.turnCount}回合 ===`, 'system');
-            this.startNewRound();
-            return;
-        }
-        this.currentUnit = nextUnit;
-        this.currentUnit.curAp = this.currentUnit.apMax;
-        this.currentUnit.hasUsedNormalAttack = false;
-        this.currentUnit.hasUsedAlloutAttack = false;
-        
-        if (this.currentUnit.faction === 'player') {
-            this.onPlayerTurn();
-        } else {
-            this.onEnemyTurn();
-        }
-    }
-
-    onPlayerTurn() {
-        this.aiBusy = false;
-        this.selectedUnit = this.currentUnit;
-        this.pendingMode = null;
-        this.log(`轮到 ${this.currentUnit.name} 行动`);
-        this.updateUI();
-    }
-
-    onEnemyTurn() {
-        if (this.gameOver) return;
-        this.aiBusy = true;
-        this.selectedUnit = this.currentUnit;
-        this.pendingMode = null;
-        this.log(`敌方 ${this.currentUnit.name} 开始行动`);
-        this.updateUI();
-        setTimeout(() => this.aiStep(), 400);
-    }
-
-    // ==================== 攻击逻辑（新增动画） ====================
-    performAttack(target, isAllout) {
-        if (!this.selectedUnit || target.dead || this.aiBusy) return;
-        if (this.selectedUnit !== this.currentUnit) return;
-
-        const atkCells = this.getBaseAttackCells(this.selectedUnit);
-        if (!atkCells.some(c => c[0] === target.x && c[1] === target.y)) {
-            this.log('目标不在攻击范围内！');
-            return;
-        }
-
-        if (isAllout) {
-            if (this.selectedUnit.hasUsedAlloutAttack || this.selectedUnit.curAp < 5) return;
-        } else {
-            if (this.selectedUnit.hasUsedNormalAttack || this.selectedUnit.curAp < 3) return;
-        }
-
-        const atkPow = this.selectedUnit.attackPower();
-        const tarDef = target.defense(this.units);
-        const dmg = Math.max(0, atkPow - tarDef);
-
-        target.hasBeenAttacked = true;
-        this.selectedUnit.hasBeenAttacked = true;
-        target.hp -= dmg;
-        if (target.hp <= 0) {
-            target.hp = 0;
-            target.dead = true;
-            target.deathTime = Date.now();
-        }
-
-        // === 新增动画反馈 ===
-        this.addDamageText(target, dmg);
-        this.addAttackEffect(this.selectedUnit, target);
-        target.shakeTime = 0.35;
-
-        if (isAllout) {
-            this.selectedUnit.curAp = 0;
-            this.selectedUnit.hasUsedAlloutAttack = true;
-            this.log(`${this.selectedUnit.name} 对 ${target.name} 发动全力一击，造成${dmg}点伤害！`, 'damage');
-        } else {
-            this.selectedUnit.curAp -= 3;
-            this.selectedUnit.hasUsedNormalAttack = true;
-            this.log(`${this.selectedUnit.name} 攻击 ${target.name}，造成${dmg}点伤害（攻:${atkPow} - 防:${tarDef}）`, 'damage');
-        }
-
-        this.pendingMode = null;
-        if (target.dead) this.log(`${target.name} 被击败！`, 'system');
-        
-        this.checkGameOver();
-        this.updateUI();
-        this.render();
-    }
-
-    performAttackAi(attacker, target, isAllout) {
-        if ((attacker.hasUsedAlloutAttack && isAllout) || (attacker.hasUsedNormalAttack && !isAllout)) return;
-        const atkCells = this.getBaseAttackCells(attacker);
-        if (!atkCells.some(c => c[0] === target.x && c[1] === target.y)) return;
-        if (isAllout && attacker.curAp < 5) return;
-        if (!isAllout && attacker.curAp < 3) return;
-
-        const atkPow = attacker.attackPower();
-        const tarDef = target.defense(this.units);
-        const dmg = Math.max(0, atkPow - tarDef);
-
-        target.hp -= dmg;
-        if (target.hp <= 0) { 
-            target.hp = 0; 
-            target.dead = true;
-            target.deathTime = Date.now();
-        }
-        target.hasBeenAttacked = true;
-        attacker.hasBeenAttacked = true;
-
-        // AI攻击也显示动画
-        this.addDamageText(target, dmg);
-        this.addAttackEffect(attacker, target);
-        target.shakeTime = 0.35;
-
-        if (isAllout) {
-            attacker.curAp = 0;
-            attacker.hasUsedAlloutAttack = true;
-            this.log(`[敌方] ${attacker.name} 全力攻击 ${target.name}，造成${dmg}点伤害`, 'damage');
-        } else {
-            attacker.curAp -= 3;
-            attacker.hasUsedNormalAttack = true;
-            this.log(`[敌方] ${attacker.name} 攻击 ${target.name}，造成${dmg}点伤害`, 'damage');
-        }
-        
-        if (target.dead) this.log(`${target.name} 被击败！`, 'system');
-    }
-
-    // ==================== 移动、结束回合等（保持原有逻辑） ====================
-    endUnitTurn(unit = this.selectedUnit) {
-        if (!unit) return;
-        if (unit.dead) {
-            unit.acted = true;
-            this.selectedUnit = null;
-            this.currentUnit = null;
-            this.pendingMode = null;
-            if (this.checkGameOver()) return;
-            this.advanceTurn();
-            return;
-        }
-
-        let enemyCount = 0;
-        for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-                if (dx === 0 && dy === 0) continue;
-                const u = getUnitAt(this.units, unit.x + dx, unit.y + dy);
-                if (u && u.faction !== unit.faction && !u.dead) enemyCount++;
+            attackPower() {
+                return this.hasBeenAttacked ? 10 : 8;
             }
         }
 
-        const heal = unit.curAp - enemyCount * 2; // 稍微调整压力值
-        const oldHp = unit.hp;
-        unit.hp = Math.max(0, Math.min(unit.maxHp, unit.hp + heal));
-        const actual = unit.hp - oldHp;
-
-        if (unit.hp <= 0) {
-            unit.hp = 0; unit.dead = true; unit.deathTime = Date.now();
-            this.log(`${unit.name} 因压力过大倒下了！`, 'damage');
-        } else if (actual > 0) {
-            this.log(`${unit.name} 回复${actual}点体力`, 'heal');
-        } else if (actual < 0) {
-            this.log(`${unit.name} 受到${-actual}点压力伤害！`, 'damage');
+        function getUnitAt(units, x, y) {
+            for (const u of units) {
+                if (u.x === x && u.y === y && !u.dead) return u;
+            }
+            return null;
         }
 
-        unit.acted = true;
-        this.selectedUnit = null;
-        this.currentUnit = null;
-        this.pendingMode = null;
+        // ==================== 游戏主类 ====================
+        class Game {
+            constructor() {
+                this.canvas = document.getElementById('board');
+                this.ctx = this.canvas.getContext('2d');
+                this.units = [];
+                this.selectedUnit = null;
+                this.currentUnit = null;
+                this.pendingMode = null;
+                this.turnCount = 1;
+                this.actionOrder = [];
+                this.aiBusy = false;
+                this.gameOver = false;
+                this.logMessages = [];
+                this.obstacles = new Set();
 
-        if (this.checkGameOver()) return;
-        this.advanceTurn();
-    }
+                // 动画系统
+                this.animations = [];
+                this.lastTime = performance.now();
+                this.animationFrame = null;
 
-    checkGameOver() {
-        const pAlive = this.units.filter(u => u.faction === 'player' && !u.dead).length;
-        const eAlive = this.units.filter(u => u.faction === 'enemy' && !u.dead).length;
-        if (pAlive === 0) {
-            this.gameOver = true;
-            this.log('💀 游戏结束：敌方胜利！', 'system');
-            this.updateUI();
-            return true;
-        }
-        if (eAlive === 0) {
-            this.gameOver = true;
-            this.log('🎉 游戏结束：玩家胜利！', 'system');
-            this.updateUI();
-            return true;
-        }
-        return false;
-    }
+                this.canvas.addEventListener('click', (e) => this.handleClick(e));
 
-    getBaseAttackCells(unit) {
-        const base = [[0, 1], [-1, 0], [1, 0]];
-        const extra = CLASS_TEMPLATES[unit.cls].extraRange;
-        const allRel = [...base, ...extra];
-        const cells = [];
-        for (const [dx, dy] of allRel) {
-            const [mx, my] = templateToMap(dx, dy, unit.facing);
-            const tx = unit.x + mx, ty = unit.y + my;
-            if (tx >= 0 && tx < BOARD_W && ty >= 0 && ty < BOARD_H) cells.push([tx, ty]);
-        }
-        return cells;
-    }
+                this.initObstacles();
+                this.initUnits();
+                this.startNewRound();
 
-    getMoveCells(unit) {
-        const reachable = {};
-        const visited = new Map();
-        visited.set(`${unit.x},${unit.y}`, 0);
-        const queue = [[unit.x, unit.y, 0]];
-        let head = 0;
+                // 启动动画循环
+                this.gameLoop();
+            }
 
-        while (head < queue.length) {
-            const [x, y, cost] = queue[head++];
-            if (cost > 0) reachable[`${x},${y}`] = cost;
-            if (cost >= unit.curAp) continue;
-            for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
-                const nx = x + dx, ny = y + dy;
-                if (nx < 0 || nx >= BOARD_W || ny < 0 || ny >= BOARD_H) continue;
-                if (this.obstacles.has(`${nx},${ny}`)) continue;
-                if (getUnitAt(this.units, nx, ny)) continue;
-                const key = `${nx},${ny}`;
-                const newCost = cost + 1;
-                if (!visited.has(key) || visited.get(key) > newCost) {
-                    visited.set(key, newCost);
-                    queue.push([nx, ny, newCost]);
+            // ==================== 动画主循环 ====================
+            gameLoop() {
+                const now = performance.now();
+                const dt = (now - this.lastTime) / 1000;
+                this.lastTime = now;
+
+                this.updateAnimations(dt);
+                this.render();
+
+                this.animationFrame = requestAnimationFrame(() => this.gameLoop());
+            }
+
+            updateAnimations(dt) {
+                for (let i = this.animations.length - 1; i >= 0; i--) {
+                    const a = this.animations[i];
+                    a.time += dt;
+                    if (a.time >= a.duration) {
+                        this.animations.splice(i, 1);
+                    }
                 }
             }
-        }
-        return reachable;
-    }
 
-    moveUnitTo(x, y) {
-        if (!this.selectedUnit || this.aiBusy) return;
-        if (this.selectedUnit !== this.currentUnit) return;
-        const moves = this.getMoveCells(this.selectedUnit);
-        const key = `${x},${y}`;
-        if (!(key in moves)) return;
+            // ==================== 动画效果 ====================
+            addDamageText(target, dmg) {
+                const screenX = target.x * CELL_SIZE + CELL_SIZE / 2;
+                const screenY = target.y * CELL_SIZE + CELL_SIZE / 2 - 15;
 
-        const cost = moves[key];
-        this.selectedUnit.x = x;
-        this.selectedUnit.y = y;
-        this.selectedUnit.curAp -= cost;
-        this.log(`${this.selectedUnit.name} 移动到 (${x},${y})，消耗${cost}AP，剩余AP:${this.selectedUnit.curAp}`);
-        this.updateUI();
-    }
-
-    // AI部分保持不变（只调用performAttackAi即可触发动画）
-    aiStep() {
-        if (!this.aiBusy || this.gameOver) return;
-        const unit = this.currentUnit;
-        if (!unit || unit.acted) {
-            this.aiBusy = false;
-            return;
-        }
-
-        const targets = this.units.filter(u => u.faction !== unit.faction && !u.dead);
-        if (!targets.length) {
-            this.endUnitTurn(unit);
-            this.aiBusy = false;
-            return;
-        }
-
-        const target = targets.reduce((best, t) => {
-            const d1 = Math.abs(t.x - unit.x) + Math.abs(t.y - unit.y);
-            const d2 = Math.abs(best.x - unit.x) + Math.abs(best.y - unit.y);
-            return d1 < d2 ? t : best;
-        });
-
-        const atkCells = this.getBaseAttackCells(unit);
-        if (atkCells.some(c => c[0] === target.x && c[1] === target.y)) {
-            if (!unit.hasUsedNormalAttack && unit.curAp >= 3) {
-                this.performAttackAi(unit, target, false);
-                this.render();
-                this.updateUI();
-                setTimeout(() => this.aiStep(), 500);
-                return;
+                this.animations.push({
+                    type: 'damage',
+                    value: dmg,
+                    screenX: screenX,
+                    screenY: screenY,
+                    time: 0,
+                    duration: 1.1
+                });
             }
-            if (!unit.hasUsedAlloutAttack && unit.curAp >= 5) {
-                this.performAttackAi(unit, target, true);
-                this.render();
-                this.updateUI();
-                setTimeout(() => this.aiStep(), 500);
-                return;
-            }
-            this.endUnitTurn(unit);
-            this.aiBusy = false;
-            return;
-        }
 
-        // 转向逻辑...
-        if (unit.curAp >= 1) {
-            const originalFacing = unit.facing;
-            for (const tryDir of ['up', 'down', 'left', 'right']) {
-                unit.facing = tryDir;
-                const newAtk = this.getBaseAttackCells(unit);
-                if (newAtk.some(c => c[0] === target.x && c[1] === target.y)) {
-                    unit.curAp -= 1;
-                    this.log(`[敌方] ${unit.name} 转向${tryDir}`);
+            addAttackEffect(attacker, target) {
+                const ax = attacker.x * CELL_SIZE + CELL_SIZE / 2;
+                const ay = attacker.y * CELL_SIZE + CELL_SIZE / 2;
+                const tx = target.x * CELL_SIZE + CELL_SIZE / 2;
+                const ty = target.y * CELL_SIZE + CELL_SIZE / 2;
+
+                this.animations.push({
+                    type: 'attackEffect',
+                    screenX: (ax + tx) / 2,
+                    screenY: (ay + ty) / 2 - 10,
+                    time: 0,
+                    duration: 0.45
+                });
+            }
+
+            // ==================== 原有游戏逻辑 ====================
+            basePositions() {
+                return [
+                    ['p1', 'infantry', 0, 8, 'up', 'player'],
+                    ['p2', 'knight', 3, 8, 'up', 'player'],
+                    ['p3', 'archer', 4, 8, 'up', 'player'],
+                    ['p4', 'mage', 5, 8, 'up', 'player'],
+                    ['p5', 'assassin', 7, 8, 'up', 'player'],
+                    ['p6', 'sword', 2, 8, 'up', 'player'],
+                    ['e1', 'infantry', 0, 1, 'down', 'enemy'],
+                    ['e2', 'knight', 3, 1, 'down', 'enemy'],
+                    ['e3', 'archer', 4, 1, 'down', 'enemy'],
+                    ['e4', 'mage', 5, 1, 'down', 'enemy'],
+                    ['e5', 'assassin', 7, 1, 'down', 'enemy'],
+                    ['e6', 'sword', 2, 1, 'down', 'enemy']
+                ];
+            }
+
+            initObstacles() {
+                const allPos = [];
+                for (let x = 0; x < BOARD_W; x++) {
+                    for (let y = 0; y < BOARD_H; y++) allPos.push([x, y]);
+                }
+                const unitPos = this.basePositions().map(p => [p[2], p[3]]);
+                const available = allPos.filter(p => !unitPos.some(up => up[0] === p[0] && up[1] === p[1]));
+                const count = Math.min(6, available.length);
+                for (let i = 0; i < count; i++) {
+                    const idx = Math.floor(Math.random() * available.length);
+                    const [x, y] = available.splice(idx, 1)[0];
+                    this.obstacles.add(`${x},${y}`);
+                }
+            }
+
+            initUnits() {
+                this.units = this.basePositions().map(args => new Unit(...args));
+            }
+
+            log(msg, type = '') {
+                this.logMessages.push({ msg, type });
+                if (this.logMessages.length > 50) this.logMessages.shift();
+                this.updateLog();
+            }
+
+            updateLog() {
+                const logEl = document.getElementById('log');
+                logEl.innerHTML = this.logMessages.slice(-12).map(entry =>
+                    `<div class="log-entry ${entry.type}">${entry.msg}</div>`
+                ).join('');
+                logEl.scrollTop = logEl.scrollHeight;
+            }
+
+            buildActionOrder() {
+                const players = this.units.filter(u => u.faction === 'player' && !u.dead);
+                const enemies = this.units.filter(u => u.faction === 'enemy' && !u.dead);
+                const order = [];
+                const maxLen = Math.max(players.length, enemies.length);
+                for (let i = 0; i < maxLen; i++) {
+                    if (i < players.length) order.push(players[i]);
+                    if (i < enemies.length) order.push(enemies[i]);
+                }
+                return order;
+            }
+
+            getNextActiveUnit() {
+                for (const u of this.actionOrder) {
+                    if (!u.acted && !u.dead) return u;
+                }
+                return null;
+            }
+
+            startNewRound() {
+                this.actionOrder = this.buildActionOrder();
+                for (const u of this.units) {
+                    u.acted = false;
+                    u.hasUsedNormalAttack = false;
+                    u.hasUsedAlloutAttack = false;
+                }
+                this.selectedUnit = null;
+                this.currentUnit = null;
+                this.pendingMode = null;
+                this.advanceTurn();
+            }
+
+            advanceTurn() {
+                if (this.gameOver) return;
+                const nextUnit = this.getNextActiveUnit();
+                if (!nextUnit) {
+                    this.turnCount++;
+                    this.log(`=== 第${this.turnCount}回合 ===`, 'system');
+                    this.startNewRound();
+                    return;
+                }
+                this.currentUnit = nextUnit;
+                this.currentUnit.curAp = this.currentUnit.apMax;
+                this.currentUnit.hasUsedNormalAttack = false;
+                this.currentUnit.hasUsedAlloutAttack = false;
+
+                if (this.currentUnit.faction === 'player') {
+                    this.onPlayerTurn();
+                } else {
+                    this.onEnemyTurn();
+                }
+            }
+
+            onPlayerTurn() {
+                this.aiBusy = false;
+                this.selectedUnit = this.currentUnit;
+                this.pendingMode = null;
+                this.log(`轮到 ${this.currentUnit.name} 行动`);
+                this.updateUI();
+            }
+
+            onEnemyTurn() {
+                if (this.gameOver) return;
+                this.aiBusy = true;
+                this.selectedUnit = this.currentUnit;
+                this.pendingMode = null;
+                this.log(`敌方 ${this.currentUnit.name} 开始行动`);
+                this.updateUI();
+                setTimeout(() => this.aiStep(), 400);
+            }
+
+            // ==================== 攻击逻辑 ====================
+            performAttack(target, isAllout) {
+                if (!this.selectedUnit || target.dead || this.aiBusy) return;
+                if (this.selectedUnit !== this.currentUnit) return;
+
+                const atkCells = this.getBaseAttackCells(this.selectedUnit);
+                if (!atkCells.some(c => c[0] === target.x && c[1] === target.y)) {
+                    this.log('目标不在攻击范围内！');
+                    return;
+                }
+
+                if (isAllout) {
+                    if (this.selectedUnit.hasUsedAlloutAttack || this.selectedUnit.curAp < 5) return;
+                } else {
+                    if (this.selectedUnit.hasUsedNormalAttack || this.selectedUnit.curAp < 3) return;
+                }
+
+                const atkPow = this.selectedUnit.attackPower();
+                const tarDef = target.defense(this.units);
+                const dmg = Math.max(0, atkPow - tarDef);
+
+                target.hasBeenAttacked = true;
+                this.selectedUnit.hasBeenAttacked = true;
+                target.hp -= dmg;
+                if (target.hp <= 0) {
+                    target.hp = 0;
+                    target.dead = true;
+                    target.deathTime = Date.now();
+                }
+
+                // === 动画反馈 ===
+                this.addDamageText(target, dmg);
+                this.addAttackEffect(this.selectedUnit, target);
+                target.shakeTime = 0.35;
+
+                if (isAllout) {
+                    this.selectedUnit.curAp = 0;
+                    this.selectedUnit.hasUsedAlloutAttack = true;
+                    this.log(`${this.selectedUnit.name} 对 ${target.name} 发动全力一击，造成${dmg}点伤害！`, 'damage');
+                } else {
+                    this.selectedUnit.curAp -= 3;
+                    this.selectedUnit.hasUsedNormalAttack = true;
+                    this.log(`${this.selectedUnit.name} 攻击 ${target.name}，造成${dmg}点伤害（攻:${atkPow} - 防:${tarDef}）`,
+                        'damage');
+                }
+
+                this.pendingMode = null;
+                if (target.dead) this.log(`${target.name} 被击败！`, 'system');
+
+                this.checkGameOver();
+                this.updateUI();
+                this.render();
+            }
+
+            performAttackAi(attacker, target, isAllout) {
+                if ((attacker.hasUsedAlloutAttack && isAllout) || (attacker.hasUsedNormalAttack && !isAllout)) return;
+                const atkCells = this.getBaseAttackCells(attacker);
+                if (!atkCells.some(c => c[0] === target.x && c[1] === target.y)) return;
+                if (isAllout && attacker.curAp < 5) return;
+                if (!isAllout && attacker.curAp < 3) return;
+
+                const atkPow = attacker.attackPower();
+                const tarDef = target.defense(this.units);
+                const dmg = Math.max(0, atkPow - tarDef);
+
+                target.hp -= dmg;
+                if (target.hp <= 0) {
+                    target.hp = 0;
+                    target.dead = true;
+                    target.deathTime = Date.now();
+                }
+                target.hasBeenAttacked = true;
+                attacker.hasBeenAttacked = true;
+
+                // AI攻击也显示动画
+                this.addDamageText(target, dmg);
+                this.addAttackEffect(attacker, target);
+                target.shakeTime = 0.35;
+
+                if (isAllout) {
+                    attacker.curAp = 0;
+                    attacker.hasUsedAlloutAttack = true;
+                    this.log(`[敌方] ${attacker.name} 全力攻击 ${target.name}，造成${dmg}点伤害`, 'damage');
+                } else {
+                    attacker.curAp -= 3;
+                    attacker.hasUsedNormalAttack = true;
+                    this.log(`[敌方] ${attacker.name} 攻击 ${target.name}，造成${dmg}点伤害`, 'damage');
+                }
+
+                if (target.dead) this.log(`${target.name} 被击败！`, 'system');
+            }
+
+            // ==================== 移动、结束回合 ====================
+            endUnitTurn(unit = this.selectedUnit) {
+                if (!unit) return;
+                if (unit.dead) {
+                    unit.acted = true;
+                    this.selectedUnit = null;
+                    this.currentUnit = null;
+                    this.pendingMode = null;
+                    if (this.checkGameOver()) return;
+                    this.advanceTurn();
+                    return;
+                }
+
+                let enemyCount = 0;
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        if (dx === 0 && dy === 0) continue;
+                        const u = getUnitAt(this.units, unit.x + dx, unit.y + dy);
+                        if (u && u.faction !== unit.faction && !u.dead) enemyCount++;
+                    }
+                }
+
+                const heal = unit.curAp - enemyCount * 2;
+                const oldHp = unit.hp;
+                unit.hp = Math.max(0, Math.min(unit.maxHp, unit.hp + heal));
+                const actual = unit.hp - oldHp;
+
+                if (unit.hp <= 0) {
+                    unit.hp = 0;
+                    unit.dead = true;
+                    unit.deathTime = Date.now();
+                    this.log(`${unit.name} 因压力过大倒下了！`, 'damage');
+                } else if (actual > 0) {
+                    this.log(`${unit.name} 回复${actual}点体力`, 'heal');
+                } else if (actual < 0) {
+                    this.log(`${unit.name} 受到${-actual}点压力伤害！`, 'damage');
+                }
+
+                unit.acted = true;
+                this.selectedUnit = null;
+                this.currentUnit = null;
+                this.pendingMode = null;
+
+                if (this.checkGameOver()) return;
+                this.advanceTurn();
+            }
+
+            checkGameOver() {
+                const pAlive = this.units.filter(u => u.faction === 'player' && !u.dead).length;
+                const eAlive = this.units.filter(u => u.faction === 'enemy' && !u.dead).length;
+                if (pAlive === 0) {
+                    this.gameOver = true;
+                    this.log('💀 游戏结束：敌方胜利！', 'system');
+                    this.updateUI();
+                    return true;
+                }
+                if (eAlive === 0) {
+                    this.gameOver = true;
+                    this.log('🎉 游戏结束：玩家胜利！', 'system');
+                    this.updateUI();
+                    return true;
+                }
+                return false;
+            }
+
+            getBaseAttackCells(unit) {
+                const base = [
+                    [0, 1],
+                    [-1, 0],
+                    [1, 0]
+                ];
+                const extra = CLASS_TEMPLATES[unit.cls].extraRange;
+                const allRel = [...base, ...extra];
+                const cells = [];
+                for (const [dx, dy] of allRel) {
+                    const [mx, my] = templateToMap(dx, dy, unit.facing);
+                    const tx = unit.x + mx,
+                        ty = unit.y + my;
+                    if (tx >= 0 && tx < BOARD_W && ty >= 0 && ty < BOARD_H) cells.push([tx, ty]);
+                }
+                return cells;
+            }
+
+            getMoveCells(unit) {
+                const reachable = {};
+                const visited = new Map();
+                visited.set(`${unit.x},${unit.y}`, 0);
+                const queue = [
+                    [unit.x, unit.y, 0]
+                ];
+                let head = 0;
+
+                while (head < queue.length) {
+                    const [x, y, cost] = queue[head++];
+                    if (cost > 0) reachable[`${x},${y}`] = cost;
+                    if (cost >= unit.curAp) continue;
+                    for (const [dx, dy] of [
+                            [0, -1],
+                            [0, 1],
+                            [-1, 0],
+                            [1, 0]
+                        ]) {
+                        const nx = x + dx,
+                            ny = y + dy;
+                        if (nx < 0 || nx >= BOARD_W || ny < 0 || ny >= BOARD_H) continue;
+                        if (this.obstacles.has(`${nx},${ny}`)) continue;
+                        if (getUnitAt(this.units, nx, ny)) continue;
+                        const key = `${nx},${ny}`;
+                        const newCost = cost + 1;
+                        if (!visited.has(key) || visited.get(key) > newCost) {
+                            visited.set(key, newCost);
+                            queue.push([nx, ny, newCost]);
+                        }
+                    }
+                }
+                return reachable;
+            }
+
+            moveUnitTo(x, y) {
+                if (!this.selectedUnit || this.aiBusy) return;
+                if (this.selectedUnit !== this.currentUnit) return;
+                const moves = this.getMoveCells(this.selectedUnit);
+                const key = `${x},${y}`;
+                if (!(key in moves)) return;
+
+                const cost = moves[key];
+                this.selectedUnit.x = x;
+                this.selectedUnit.y = y;
+                this.selectedUnit.curAp -= cost;
+                this.log(`${this.selectedUnit.name} 移动到 (${x},${y})，消耗${cost}AP，剩余AP:${this.selectedUnit.curAp}`);
+                this.updateUI();
+            }
+
+            // AI部分
+            aiStep() {
+                if (!this.aiBusy || this.gameOver) return;
+                const unit = this.currentUnit;
+                if (!unit || unit.acted) {
+                    this.aiBusy = false;
+                    return;
+                }
+
+                const targets = this.units.filter(u => u.faction !== unit.faction && !u.dead);
+                if (!targets.length) {
+                    this.endUnitTurn(unit);
+                    this.aiBusy = false;
+                    return;
+                }
+
+                const target = targets.reduce((best, t) => {
+                    const d1 = Math.abs(t.x - unit.x) + Math.abs(t.y - unit.y);
+                    const d2 = Math.abs(best.x - unit.x) + Math.abs(best.y - unit.y);
+                    return d1 < d2 ? t : best;
+                });
+
+                const atkCells = this.getBaseAttackCells(unit);
+                if (atkCells.some(c => c[0] === target.x && c[1] === target.y)) {
                     if (!unit.hasUsedNormalAttack && unit.curAp >= 3) {
                         this.performAttackAi(unit, target, false);
-                    } else if (!unit.hasUsedAlloutAttack && unit.curAp >= 5) {
+                        this.render();
+                        this.updateUI();
+                        setTimeout(() => this.aiStep(), 500);
+                        return;
+                    }
+                    if (!unit.hasUsedAlloutAttack && unit.curAp >= 5) {
                         this.performAttackAi(unit, target, true);
-                    } else {
-                        this.endUnitTurn(unit);
-                        this.aiBusy = false;
+                        this.render();
+                        this.updateUI();
+                        setTimeout(() => this.aiStep(), 500);
+                        return;
                     }
-                    this.render();
-                    this.updateUI();
+                    this.endUnitTurn(unit);
+                    this.aiBusy = false;
                     return;
                 }
-            }
-            unit.facing = originalFacing;
-        }
 
-        // 移动逻辑...
-        if (unit.curAp >= 1) {
-            const moves = this.getMoveCells(unit);
-            let bestPos = null, bestDist = Infinity;
-            for (const [key, cost] of Object.entries(moves)) {
-                const [mx, my] = key.split(',').map(Number);
-                const dist = Math.abs(target.x - mx) + Math.abs(target.y - my);
-                if (dist < bestDist) {
-                    bestDist = dist;
-                    bestPos = [mx, my, cost];
-                }
-            }
-
-            if (bestPos) {
-                const [mx, my, cost] = bestPos;
-                const dx = mx - unit.x, dy = my - unit.y;
-                const stepX = dx === 0 ? 0 : (dx > 0 ? 1 : -1);
-                const stepY = dy === 0 ? 0 : (dy > 0 ? 1 : -1);
-                let moved = false;
-
-                for (const [sx, sy] of [[stepX, 0], [0, stepY], [stepX, stepY]]) {
-                    if (sx === 0 && sy === 0) continue;
-                    const nx = unit.x + sx, ny = unit.y + sy;
-                    const nKey = `${nx},${ny}`;
-                    if (nKey in moves && moves[nKey] <= unit.curAp) {
-                        unit.x = nx; unit.y = ny;
-                        unit.curAp -= 1;
-                        if (Math.abs(sx) >= Math.abs(sy)) {
-                            unit.facing = sx > 0 ? 'right' : 'left';
-                        } else {
-                            unit.facing = sy > 0 ? 'down' : 'up';
+                // 转向逻辑
+                if (unit.curAp >= 1) {
+                    const originalFacing = unit.facing;
+                    for (const tryDir of ['up', 'down', 'left', 'right']) {
+                        unit.facing = tryDir;
+                        const newAtk = this.getBaseAttackCells(unit);
+                        if (newAtk.some(c => c[0] === target.x && c[1] === target.y)) {
+                            unit.curAp -= 1;
+                            this.log(`[敌方] ${unit.name} 转向${tryDir}`);
+                            if (!unit.hasUsedNormalAttack && unit.curAp >= 3) {
+                                this.performAttackAi(unit, target, false);
+                            } else if (!unit.hasUsedAlloutAttack && unit.curAp >= 5) {
+                                this.performAttackAi(unit, target, true);
+                            } else {
+                                this.endUnitTurn(unit);
+                                this.aiBusy = false;
+                            }
+                            this.render();
+                            this.updateUI();
+                            return;
                         }
-                        moved = true;
-                        break;
+                    }
+                    unit.facing = originalFacing;
+                }
+
+                // 移动逻辑
+                if (unit.curAp >= 1) {
+                    const moves = this.getMoveCells(unit);
+                    let bestPos = null,
+                        bestDist = Infinity;
+                    for (const [key, cost] of Object.entries(moves)) {
+                        const [mx, my] = key.split(',').map(Number);
+                        const dist = Math.abs(target.x - mx) + Math.abs(target.y - my);
+                        if (dist < bestDist) {
+                            bestDist = dist;
+                            bestPos = [mx, my, cost];
+                        }
+                    }
+
+                    if (bestPos) {
+                        const [mx, my, cost] = bestPos;
+                        const dx = mx - unit.x,
+                            dy = my - unit.y;
+                        const stepX = dx === 0 ? 0 : (dx > 0 ? 1 : -1);
+                        const stepY = dy === 0 ? 0 : (dy > 0 ? 1 : -1);
+                        let moved = false;
+
+                        for (const [sx, sy] of [
+                                [stepX, 0],
+                                [0, stepY],
+                                [stepX, stepY]
+                            ]) {
+                            if (sx === 0 && sy === 0) continue;
+                            const nx = unit.x + sx,
+                                ny = unit.y + sy;
+                            const nKey = `${nx},${ny}`;
+                            if (nKey in moves && moves[nKey] <= unit.curAp) {
+                                unit.x = nx;
+                                unit.y = ny;
+                                unit.curAp -= 1;
+                                if (Math.abs(sx) >= Math.abs(sy)) {
+                                    unit.facing = sx > 0 ? 'right' : 'left';
+                                } else {
+                                    unit.facing = sy > 0 ? 'down' : 'up';
+                                }
+                                moved = true;
+                                break;
+                            }
+                        }
+
+                        if (!moved) {
+                            this.endUnitTurn(unit);
+                            this.aiBusy = false;
+                            return;
+                        }
+                        this.render();
+                        this.updateUI();
+                        if (unit.curAp > 0) {
+                            setTimeout(() => this.aiStep(), 350);
+                        } else {
+                            this.endUnitTurn(unit);
+                            this.aiBusy = false;
+                        }
+                        return;
+                    }
+                }
+                this.endUnitTurn(unit);
+                this.aiBusy = false;
+            }
+
+            // ==================== 交互 ====================
+            toggleAttackMode() {
+                if (!this.selectedUnit || this.aiBusy || this.gameOver) return;
+                if (this.selectedUnit !== this.currentUnit) return;
+                if (this.selectedUnit.hasUsedNormalAttack || this.selectedUnit.curAp < 3) return;
+                this.pendingMode = this.pendingMode === 'attack' ? null : 'attack';
+                this.updateUI();
+                this.render();
+            }
+
+            toggleAlloutMode() {
+                if (!this.selectedUnit || this.aiBusy || this.gameOver) return;
+                if (this.selectedUnit !== this.currentUnit) return;
+                if (this.selectedUnit.hasUsedAlloutAttack || this.selectedUnit.curAp < 5) return;
+                this.pendingMode = this.pendingMode === 'allout' ? null : 'allout';
+                this.updateUI();
+                this.render();
+            }
+
+            changeFacing(direction) {
+                if (!this.selectedUnit || this.aiBusy || this.gameOver || this.selectedUnit.curAp < 1) return;
+                if (this.selectedUnit !== this.currentUnit) return;
+
+                this.selectedUnit.facing = direction;
+                this.selectedUnit.curAp -= 1;
+                const dirNames = { up: '上', down: '下', left: '左', right: '右' };
+                this.log(`${this.selectedUnit.name} 转向${dirNames[direction]}，消耗1AP`);
+                this.updateUI();
+                this.render();
+            }
+
+            handleClick(e) {
+                if (this.aiBusy || this.gameOver) return;
+                const rect = this.canvas.getBoundingClientRect();
+                const mx = e.clientX - rect.left,
+                    my = e.clientY - rect.top;
+                const gx = Math.floor(mx / CELL_SIZE),
+                    gy = Math.floor(my / CELL_SIZE);
+                if (gx < 0 || gx >= BOARD_W || gy < 0 || gy >= BOARD_H) return;
+
+                const unit = getUnitAt(this.units, gx, gy);
+
+                if (this.pendingMode && this.selectedUnit && this.selectedUnit === this.currentUnit) {
+                    if (unit && unit.faction !== this.selectedUnit.faction && !unit.dead) {
+                        this.performAttack(unit, this.pendingMode === 'allout');
+                        return;
+                    } else {
+                        this.pendingMode = null;
+                        this.updateUI();
+                        this.render();
+                        return;
                     }
                 }
 
-                if (!moved) {
-                    this.endUnitTurn(unit);
-                    this.aiBusy = false;
+                if (unit && unit.faction === 'player' && !unit.dead) {
+                    if (unit === this.currentUnit) {
+                        this.selectedUnit = unit;
+                        this.pendingMode = null;
+                        this.updateUI();
+                        this.render();
+                        return;
+                    } else {
+                        this.log('现在不是该单位的行动轮次');
+                        return;
+                    }
+                }
+
+                if (this.selectedUnit && !unit && this.selectedUnit === this.currentUnit) {
+                    this.moveUnitTo(gx, gy);
+                    this.render();
                     return;
                 }
-                this.render();
-                this.updateUI();
-                if (unit.curAp > 0) {
-                    setTimeout(() => this.aiStep(), 350);
+            }
+
+            updateUI() {
+                const turnInfo = document.getElementById('turnInfo');
+                if (this.gameOver) {
+                    turnInfo.textContent = '游戏结束';
+                    turnInfo.className = 'game-over';
+                } else if (this.currentUnit && this.currentUnit.faction === 'player') {
+                    turnInfo.textContent = `🛡️ 玩家行动 (第${this.turnCount}回合)`;
+                    turnInfo.className = 'player-turn';
                 } else {
-                    this.endUnitTurn(unit);
-                    this.aiBusy = false;
+                    turnInfo.textContent = `⚔️ 敌方行动 (第${this.turnCount}回合)`;
+                    turnInfo.className = 'enemy-turn';
                 }
-                return;
+
+                const unitInfo = document.getElementById('unitInfo');
+                if (this.selectedUnit && !this.selectedUnit.dead && this.selectedUnit.faction === 'player') {
+                    const u = this.selectedUnit;
+                    unitInfo.innerHTML = `
+                        <div class="info-line"><span class="label">位置:</span> (${u.x},${u.y}) 朝向${u.facing}</div>
+                        <div class="info-line"><span class="label">体力:</span> ${u.hp}/${u.maxHp}</div>
+                        <div class="info-line"><span class="label">行动点:</span> ${u.curAp}/${u.apMax}</div>
+                        <div class="info-line"><span class="label">攻击力:</span> ${u.attackPower()}${!u.hasBeenAttacked ? ' (首次8)' : ''}</div>
+                        <div class="info-line"><span class="label">防御力:</span> ${u.defense(this.units)} (基础${u.defBase}+站位)</div>
+                        <div class="info-line"><span class="label">普通攻击:</span> ${u.hasUsedNormalAttack ? '已用' : '可用'}</div>
+                        <div class="info-line"><span class="label">全力一击:</span> ${u.hasUsedAlloutAttack ? '已用' : '可用'}</div>
+                        <div class="info-line" style="color:#ffd700;margin-top:8px;">${CLASS_TEMPLATES[u.cls].desc}</div>
+                    `;
+                } else {
+                    unitInfo.innerHTML =
+                        `<div style="color:#aaa;text-align:center;padding:20px;">${this.aiBusy ? '敌方思考中...' : (this.gameOver ? '战斗结束' : '等待行动')}</div>`;
+                }
+
+                const btnAttack = document.getElementById('btnAttack');
+                const btnAllout = document.getElementById('btnAllout');
+                const btnEnd = document.getElementById('btnEnd');
+                const canAct = this.selectedUnit && !this.aiBusy && !this.gameOver && this.selectedUnit === this
+                    .currentUnit;
+
+                btnAttack.disabled = !canAct || this.selectedUnit?.hasUsedNormalAttack || this.selectedUnit?.curAp < 3;
+                btnAttack.classList.toggle('active', this.pendingMode === 'attack');
+                btnAttack.textContent = this.pendingMode === 'attack' ? '【攻击中】' : '普通攻击';
+
+                btnAllout.disabled = !canAct || this.selectedUnit?.hasUsedAlloutAttack || this.selectedUnit?.curAp < 5;
+                btnAllout.classList.toggle('active', this.pendingMode === 'allout');
+                btnAllout.textContent = this.pendingMode === 'allout' ? '【全力中】' : '全力一击';
+
+                btnEnd.disabled = !this.selectedUnit || this.aiBusy;
             }
-        }
-        this.endUnitTurn(unit);
-        this.aiBusy = false;
-    }
 
-    // ==================== 交互 ====================
-    toggleAttackMode() {
-        if (!this.selectedUnit || this.aiBusy || this.gameOver) return;
-        if (this.selectedUnit !== this.currentUnit) return;
-        if (this.selectedUnit.hasUsedNormalAttack || this.selectedUnit.curAp < 3) return;
-        this.pendingMode = this.pendingMode === 'attack' ? null : 'attack';
-        this.updateUI();
-        this.render();
-    }
+            // ==================== 渲染（核心增强） ====================
+            render() {
+                const ctx = this.ctx;
+                ctx.fillStyle = COLORS.BG;
+                ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    toggleAlloutMode() {
-        if (!this.selectedUnit || this.aiBusy || this.gameOver) return;
-        if (this.selectedUnit !== this.currentUnit) return;
-        if (this.selectedUnit.hasUsedAlloutAttack || this.selectedUnit.curAp < 5) return;
-        this.pendingMode = this.pendingMode === 'allout' ? null : 'allout';
-        this.updateUI();
-        this.render();
-    }
+                // 战场背景装饰
+                ctx.fillStyle = COLORS.BOARD_BG;
+                ctx.fillRect(8, 8, this.canvas.width - 16, this.canvas.height - 16);
 
-    changeFacing(direction) {
-        if (!this.selectedUnit || this.aiBusy || this.gameOver || this.selectedUnit.curAp < 1) return;
-        if (this.selectedUnit !== this.currentUnit) return;
-        
-        this.selectedUnit.facing = direction;
-        this.selectedUnit.curAp -= 1;
-        const dirNames = { up: '上', down: '下', left: '左', right: '右' };
-        this.log(`${this.selectedUnit.name} 转向${dirNames[direction]}，消耗1AP`);
-        this.updateUI();
-        this.render();
-    }
-
-    handleClick(e) {
-        if (this.aiBusy || this.gameOver) return;
-        const rect = this.canvas.getBoundingClientRect();
-        const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-        const gx = Math.floor(mx / CELL_SIZE), gy = Math.floor(my / CELL_SIZE);
-        if (gx < 0 || gx >= BOARD_W || gy < 0 || gy >= BOARD_H) return;
-
-        const unit = getUnitAt(this.units, gx, gy);
-
-        if (this.pendingMode && this.selectedUnit && this.selectedUnit === this.currentUnit) {
-            if (unit && unit.faction !== this.selectedUnit.faction && !unit.dead) {
-                this.performAttack(unit, this.pendingMode === 'allout');
-                return;
-            } else {
-                this.pendingMode = null;
-                this.updateUI();
-                this.render();
-                return;
-            }
-        }
-
-        if (unit && unit.faction === 'player' && !unit.dead) {
-            if (unit === this.currentUnit) {
-                this.selectedUnit = unit;
-                this.pendingMode = null;
-                this.updateUI();
-                this.render();
-                return;
-            } else {
-                this.log('现在不是该单位的行动轮次');
-                return;
-            }
-        }
-
-        if (this.selectedUnit && !unit && this.selectedUnit === this.currentUnit) {
-            this.moveUnitTo(gx, gy);
-            this.render();
-            return;
-        }
-    }
-
-    updateUI() {
-        // ... 原有UI更新代码保持不变 ...
-        const turnInfo = document.getElementById('turnInfo');
-        if (this.gameOver) {
-            turnInfo.textContent = '游戏结束';
-            turnInfo.className = 'game-over';
-        } else if (this.currentUnit && this.currentUnit.faction === 'player') {
-            turnInfo.textContent = `🛡️ 玩家行动 (第${this.turnCount}回合)`;
-            turnInfo.className = 'player-turn';
-        } else {
-            turnInfo.textContent = `⚔️ 敌方行动 (第${this.turnCount}回合)`;
-            turnInfo.className = 'enemy-turn';
-        }
-
-        const unitInfo = document.getElementById('unitInfo');
-        if (this.selectedUnit && !this.selectedUnit.dead && this.selectedUnit.faction === 'player') {
-            const u = this.selectedUnit;
-            unitInfo.innerHTML = `
-                <div class="info-line"><span class="label">位置:</span> (${u.x},${u.y}) 朝向${u.facing}</div>
-                <div class="info-line"><span class="label">体力:</span> ${u.hp}/${u.maxHp}</div>
-                <div class="info-line"><span class="label">行动点:</span> ${u.curAp}/${u.apMax}</div>
-                <div class="info-line"><span class="label">攻击力:</span> ${u.attackPower()}${!u.hasBeenAttacked ? ' (首次8)' : ''}</div>
-                <div class="info-line"><span class="label">防御力:</span> ${u.defense(this.units)} (基础${u.defBase}+站位)</div>
-                <div class="info-line"><span class="label">普通攻击:</span> ${u.hasUsedNormalAttack ? '已用' : '可用'}</div>
-                <div class="info-line"><span class="label">全力一击:</span> ${u.hasUsedAlloutAttack ? '已用' : '可用'}</div>
-                <div class="info-line" style="color:#ffd700;margin-top:8px;">${CLASS_TEMPLATES[u.cls].desc}</div>
-            `;
-        } else {
-            unitInfo.innerHTML = `<div style="color:#aaa;text-align:center;padding:20px;">${this.aiBusy ? '敌方思考中...' : (this.gameOver ? '战斗结束' : '等待行动')}</div>`;
-        }
-
-        const btnAttack = document.getElementById('btnAttack');
-        const btnAllout = document.getElementById('btnAllout');
-        const btnEnd = document.getElementById('btnEnd');
-        const canAct = this.selectedUnit && !this.aiBusy && !this.gameOver && this.selectedUnit === this.currentUnit;
-
-        btnAttack.disabled = !canAct || this.selectedUnit?.hasUsedNormalAttack || this.selectedUnit?.curAp < 3;
-        btnAttack.classList.toggle('active', this.pendingMode === 'attack');
-        btnAttack.textContent = this.pendingMode === 'attack' ? '【攻击中】' : '普通攻击';
-
-        btnAllout.disabled = !canAct || this.selectedUnit?.hasUsedAlloutAttack || this.selectedUnit?.curAp < 5;
-        btnAllout.classList.toggle('active', this.pendingMode === 'allout');
-        btnAllout.textContent = this.pendingMode === 'allout' ? '【全力中】' : '全力一击';
-
-        btnEnd.disabled = !this.selectedUnit || this.aiBusy;
-    }
-
-    // ==================== 渲染（核心增强） ====================
-    render() {
-        const ctx = this.ctx;
-        ctx.fillStyle = COLORS.BG;
-        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // 战场背景装饰
-        ctx.fillStyle = COLORS.BOARD_BG;
-        ctx.fillRect(8, 8, this.canvas.width - 16, this.canvas.height - 16);
-
-        // 轻微网格纹理
-        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-        ctx.lineWidth = 1;
-        for (let i = 1; i < BOARD_H; i++) {
-            ctx.beginPath();
-            ctx.moveTo(10, i * CELL_SIZE + 8);
-            ctx.lineTo(this.canvas.width - 10, i * CELL_SIZE + 8);
-            ctx.stroke();
-        }
-
-        let moveCells = {};
-        let atkCells = [];
-        if (this.selectedUnit && !this.aiBusy && this.selectedUnit.faction === 'player' && !this.pendingMode) {
-            moveCells = this.getMoveCells(this.selectedUnit);
-        }
-        if (this.selectedUnit && !this.aiBusy) {
-            atkCells = this.getBaseAttackCells(this.selectedUnit);
-        }
-
-        for (let y = 0; y < BOARD_H; y++) {
-            for (let x = 0; x < BOARD_W; x++) {
-                const rectX = x * CELL_SIZE;
-                const rectY = y * CELL_SIZE;
-
-                // 障碍物
-                if (this.obstacles.has(`${x},${y}`)) {
-                    ctx.fillStyle = COLORS.OBSTACLE;
-                    ctx.fillRect(rectX, rectY, CELL_SIZE, CELL_SIZE);
-                    ctx.strokeStyle = COLORS.OBSTACLE_BORDER;
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(rectX + 4, rectY + 4, CELL_SIZE - 8, CELL_SIZE - 8);
-                    continue;
-                }
-
-                let color = COLORS.CELL;
-                if (`${x},${y}` in moveCells && !this.pendingMode) color = '#1e5aa8';
-                if (atkCells.some(c => c[0] === x && c[1] === y)) color = '#9f2a2a';
-
-                ctx.fillStyle = color;
-                ctx.fillRect(rectX, rectY, CELL_SIZE, CELL_SIZE);
-
-                // 当前行动单位高亮
-                if (this.currentUnit && this.currentUnit.x === x && this.currentUnit.y === y) {
-                    ctx.strokeStyle = COLORS.CURRENT_TURN;
-                    ctx.lineWidth = 4;
-                    ctx.strokeRect(rectX + 2, rectY + 2, CELL_SIZE - 4, CELL_SIZE - 4);
-                }
-
-                // 选中单位高亮
-                if (this.selectedUnit && this.selectedUnit.x === x && this.selectedUnit.y === y) {
-                    ctx.strokeStyle = '#ffd700';
-                    ctx.lineWidth = 3;
-                    ctx.strokeRect(rectX + 3, rectY + 3, CELL_SIZE - 6, CELL_SIZE - 6);
-                }
-
-                ctx.strokeStyle = COLORS.CELL_BORDER;
+                // 轻微网格纹理
+                ctx.strokeStyle = 'rgba(255,255,255,0.06)';
                 ctx.lineWidth = 1;
-                ctx.strokeRect(rectX, rectY, CELL_SIZE, CELL_SIZE);
-
-                // AP消耗提示
-                const key = `${x},${y}`;
-                if (key in moveCells && key !== `${this.selectedUnit?.x},${this.selectedUnit?.y}`) {
-                    const cost = moveCells[key];
-                    ctx.fillStyle = '#ffee88';
-                    ctx.font = 'bold 11px Microsoft YaHei';
-                    ctx.textAlign = 'right';
-                    ctx.fillText(`-${cost}`, rectX + CELL_SIZE - 4, rectY + CELL_SIZE - 4);
-                    ctx.textAlign = 'left';
+                for (let i = 1; i < BOARD_H; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(10, i * CELL_SIZE + 8);
+                    ctx.lineTo(this.canvas.width - 10, i * CELL_SIZE + 8);
+                    ctx.stroke();
                 }
 
-                const unit = getUnitAt(this.units, x, y);
-                if (unit) {
-                    this.drawUnit(ctx, unit, rectX + CELL_SIZE/2, rectY + CELL_SIZE/2);
+                let moveCells = {};
+                let atkCells = [];
+                if (this.selectedUnit && !this.aiBusy && this.selectedUnit.faction === 'player' && !this.pendingMode) {
+                    moveCells = this.getMoveCells(this.selectedUnit);
                 }
+                if (this.selectedUnit && !this.aiBusy) {
+                    atkCells = this.getBaseAttackCells(this.selectedUnit);
+                }
+
+                for (let y = 0; y < BOARD_H; y++) {
+                    for (let x = 0; x < BOARD_W; x++) {
+                        const rectX = x * CELL_SIZE;
+                        const rectY = y * CELL_SIZE;
+
+                        // 障碍物
+                        if (this.obstacles.has(`${x},${y}`)) {
+                            ctx.fillStyle = COLORS.OBSTACLE;
+                            ctx.fillRect(rectX, rectY, CELL_SIZE, CELL_SIZE);
+                            ctx.strokeStyle = COLORS.OBSTACLE_BORDER;
+                            ctx.lineWidth = 2;
+                            ctx.strokeRect(rectX + 4, rectY + 4, CELL_SIZE - 8, CELL_SIZE - 8);
+                            continue;
+                        }
+
+                        let color = COLORS.CELL;
+                        if (`${x},${y}` in moveCells && !this.pendingMode) color = '#1e5aa8';
+                        if (atkCells.some(c => c[0] === x && c[1] === y)) color = '#9f2a2a';
+
+                        ctx.fillStyle = color;
+                        ctx.fillRect(rectX, rectY, CELL_SIZE, CELL_SIZE);
+
+                        // 当前行动单位高亮
+                        if (this.currentUnit && this.currentUnit.x === x && this.currentUnit.y === y) {
+                            ctx.strokeStyle = COLORS.CURRENT_TURN;
+                            ctx.lineWidth = 4;
+                            ctx.strokeRect(rectX + 2, rectY + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+                        }
+
+                        // 选中单位高亮
+                        if (this.selectedUnit && this.selectedUnit.x === x && this.selectedUnit.y === y) {
+                            ctx.strokeStyle = '#ffd700';
+                            ctx.lineWidth = 3;
+                            ctx.strokeRect(rectX + 3, rectY + 3, CELL_SIZE - 6, CELL_SIZE - 6);
+                        }
+
+                        ctx.strokeStyle = COLORS.CELL_BORDER;
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(rectX, rectY, CELL_SIZE, CELL_SIZE);
+
+                        // AP消耗提示
+                        const key = `${x},${y}`;
+                        if (key in moveCells && key !== `${this.selectedUnit?.x},${this.selectedUnit?.y}`) {
+                            const cost = moveCells[key];
+                            ctx.fillStyle = '#ffee88';
+                            ctx.font = 'bold 11px Microsoft YaHei';
+                            ctx.textAlign = 'right';
+                            ctx.fillText(`-${cost}`, rectX + CELL_SIZE - 4, rectY + CELL_SIZE - 4);
+                            ctx.textAlign = 'left';
+                        }
+
+                        const unit = getUnitAt(this.units, x, y);
+                        if (unit) {
+                            this.drawUnit(ctx, unit, rectX + CELL_SIZE / 2, rectY + CELL_SIZE / 2);
+                        }
+                    }
+                }
+
+                // 绘制动画层
+                this.drawAnimations();
             }
-        }
 
-        // 绘制动画层
-        this.drawAnimations();
-    }
+            drawUnit(ctx, unit, cx, cy) {
+                let x = cx;
+                let y = cy;
+                let alpha = unit.dead ? Math.max(0, 1 - (Date.now() - unit.deathTime) / 900) : 1.0;
 
-    drawUnit(ctx, unit, cx, cy) {
-        let x = cx;
-        let y = cy;
-        let alpha = unit.dead ? Math.max(0, 1 - (Date.now() - unit.deathTime) / 900) : 1.0;
+                if (alpha <= 0) return;
 
-        if (alpha <= 0) return;
+                // 抖动效果
+                if (unit.shakeTime > 0) {
+                    const shake = Math.sin(unit.shakeTime * 55) * 4;
+                    x += shake;
+                    unit.shakeTime -= 0.018;
+                }
 
-        // 抖动效果
-        if (unit.shakeTime > 0) {
-            const shake = Math.sin(unit.shakeTime * 55) * 4;
-            x += shake;
-            unit.shakeTime -= 0.018;
-        }
+                ctx.globalAlpha = alpha;
 
-        ctx.globalAlpha = alpha;
+                const radius = 19;
+                let color;
+                if (unit.dead) {
+                    // 死亡后的颜色
+                    color = unit.faction === 'player' ? '#2a2a3a' : '#3a2a2a';
+                } else if (unit.acted) {
+                    // ★ 核心改动：区分敌我灰色
+                    color = unit.faction === 'player' ? COLORS.PLAYER_ACTED : COLORS.ENEMY_ACTED;
+                } else {
+                    color = unit.faction === 'player' ? COLORS.PLAYER : COLORS.ENEMY;
+                }
 
-        const radius = 19;
-        let color = unit.faction === 'player' ? COLORS.PLAYER : COLORS.ENEMY;
-        if (unit.acted) color = '#555577';
-        if (unit.dead) color = '#222233';
+                // 阴影
+                ctx.shadowColor = 'rgba(0,0,0,0.7)';
+                ctx.shadowBlur = 10;
+                ctx.shadowOffsetX = 3;
+                ctx.shadowOffsetY = 6;
 
-        // 阴影
-        ctx.shadowColor = 'rgba(0,0,0,0.7)';
-        ctx.shadowBlur = 10;
-        ctx.shadowOffsetX = 3;
-        ctx.shadowOffsetY = 6;
-
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.fill();
-
-        ctx.shadowBlur = 0;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
-
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2.8;
-        ctx.stroke();
-
-        // 朝向
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 15px Microsoft YaHei';
-        ctx.textAlign = 'center';
-        const arrows = { up: '↑', down: '↓', left: '←', right: '→' };
-        ctx.fillText(arrows[unit.facing] || '●', x, y - 7);
-
-        // 名称
-        ctx.font = '10px Microsoft YaHei';
-        ctx.fillText(unit.name, x, y + 8);
-
-        // HP
-        ctx.fillStyle = unit.hp > unit.maxHp * 0.4 ? COLORS.HP_GREEN : '#ffdd44';
-        ctx.fillText(`HP ${unit.hp}`, x, y + 22);
-
-        ctx.globalAlpha = 1.0;
-        ctx.textAlign = 'left';
-    }
-
-    drawAnimations() {
-        const ctx = this.ctx;
-        ctx.save();
-        ctx.textAlign = 'center';
-        ctx.font = 'bold 18px Microsoft YaHei';
-
-        for (const a of this.animations) {
-            const progress = Math.min(1, a.time / a.duration);
-            const alpha = Math.max(0, 1 - progress * 1.3);
-
-            if (a.type === 'damage') {
-                const yOffset = -progress * 68;
-                ctx.fillStyle = `rgba(255, 80, 80, ${alpha})`;
-                ctx.shadowColor = '#ff2222';
-                ctx.shadowBlur = 15;
-                ctx.fillText(`-${a.value}`, a.screenX, a.screenY + yOffset);
-            } 
-            else if (a.type === 'attackEffect') {
-                const size = 12 + progress * 42;
-                ctx.strokeStyle = `rgba(255, 220, 100, ${1 - progress * 1.8})`;
-                ctx.lineWidth = 5 - progress * 4;
                 ctx.beginPath();
-                ctx.arc(a.screenX, a.screenY, size, 0, Math.PI * 2);
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2.8;
                 ctx.stroke();
+
+                // 朝向箭头（圆内上方）
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 15px Microsoft YaHei';
+                ctx.textAlign = 'center';
+                const arrows = { up: '↑', down: '↓', left: '←', right: '→' };
+                ctx.fillText(arrows[unit.facing] || '●', x, y - 7);
+
+                // 名称（圆内偏下）
+                ctx.font = '10px Microsoft YaHei';
+                ctx.fillText(unit.name, x, y + 8);
+
+                // ★ 核心改动：更明显的血量显示
+                const hpText = `HP ${unit.hp}`;
+                ctx.font = 'bold 12px Microsoft YaHei';
+                const hpMetrics = ctx.measureText(hpText);
+                const hpWidth = hpMetrics.width;
+                const hpHeight = 14;
+                const hpBgX = x - hpWidth / 2 - 5;
+                const hpBgY = y + 12;
+                const hpTextY = y + 24;
+
+                // 半透明深色背景条
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.beginPath();
+                // 手动绘制圆角矩形以保证兼容性
+                const r = 4;
+                const bx = hpBgX,
+                    by = hpBgY,
+                    bw = hpWidth + 10,
+                    bh = hpHeight + 4;
+                ctx.moveTo(bx + r, by);
+                ctx.lineTo(bx + bw - r, by);
+                ctx.arcTo(bx + bw, by, bx + bw, by + r, r);
+                ctx.lineTo(bx + bw, by + bh - r);
+                ctx.arcTo(bx + bw, by + bh, bx + bw - r, by + bh, r);
+                ctx.lineTo(bx + r, by + bh);
+                ctx.arcTo(bx, by + bh, bx, by + bh - r, r);
+                ctx.lineTo(bx, by + r);
+                ctx.arcTo(bx, by, bx + r, by, r);
+                ctx.closePath();
+                ctx.fill();
+
+                // 血量文字——根据剩余比例变色
+                const hpRatio = unit.hp / unit.maxHp;
+                if (hpRatio > 0.6) {
+                    ctx.fillStyle = '#00ff88';
+                } else if (hpRatio > 0.3) {
+                    ctx.fillStyle = '#ffdd44';
+                } else {
+                    ctx.fillStyle = '#ff5555';
+                }
+                ctx.fillText(hpText, x, hpTextY);
+
+                ctx.globalAlpha = 1.0;
+                ctx.textAlign = 'left';
+            }
+
+            drawAnimations() {
+                const ctx = this.ctx;
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.font = 'bold 18px Microsoft YaHei';
+
+                for (const a of this.animations) {
+                    const progress = Math.min(1, a.time / a.duration);
+                    const alpha = Math.max(0, 1 - progress * 1.3);
+
+                    if (a.type === 'damage') {
+                        const yOffset = -progress * 68;
+                        ctx.fillStyle = `rgba(255, 80, 80, ${alpha})`;
+                        ctx.shadowColor = '#ff2222';
+                        ctx.shadowBlur = 15;
+                        ctx.fillText(`-${a.value}`, a.screenX, a.screenY + yOffset);
+                    } else if (a.type === 'attackEffect') {
+                        const size = 12 + progress * 42;
+                        ctx.strokeStyle = `rgba(255, 220, 100, ${1 - progress * 1.8})`;
+                        ctx.lineWidth = 5 - progress * 4;
+                        ctx.beginPath();
+                        ctx.arc(a.screenX, a.screenY, size, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                }
+                ctx.restore();
             }
         }
-        ctx.restore();
-    }
-}
 
-// 启动游戏
-const game = new Game();
-</script>
+        // 启动游戏
+        const game = new Game();
+    </script>
 </body>
 </html>
