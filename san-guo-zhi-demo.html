@@ -760,6 +760,7 @@
                 }
 
                 // 转向逻辑
+                // 转向逻辑修复
                 if (unit.curAp >= 1) {
                     const originalFacing = unit.facing;
                     for (const tryDir of ['up', 'down', 'left', 'right']) {
@@ -770,8 +771,18 @@
                             this.log(`[敌方] ${unit.name} 转向${tryDir}`);
                             if (!unit.hasUsedNormalAttack && unit.curAp >= 3) {
                                 this.performAttackAi(unit, target, false);
+                                // ★ 修复：攻击后继续AI步骤
+                                this.render();
+                                this.updateUI();
+                                setTimeout(() => this.aiStep(), 500);
+                                return;
                             } else if (!unit.hasUsedAlloutAttack && unit.curAp >= 5) {
                                 this.performAttackAi(unit, target, true);
+                                // ★ 修复：攻击后继续AI步骤
+                                this.render();
+                                this.updateUI();
+                                setTimeout(() => this.aiStep(), 500);
+                                return;
                             } else {
                                 this.endUnitTurn(unit);
                                 this.aiBusy = false;
