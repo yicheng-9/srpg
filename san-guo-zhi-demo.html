@@ -468,11 +468,13 @@
                 name: '步兵',
                 shortName: '步',
                 hp: 20,
-                atk: 8,
+                atk: 9,
                 def: 5,
                 ap: 10,
-                extraRange: [],
-                desc: '基础兵种，攻守平衡',
+                extraRange: [
+                    [0, 1]
+                ],
+                desc: '久经沙场',
                 maxTargets: 1
             },
             knight: {
@@ -483,10 +485,11 @@
                 def: 4,
                 ap: 12,
                 extraRange: [
+                    [0, 1],
                     [0, 2],
                     [0, 3]
                 ],
-                desc: '前方+2格冲锋',
+                desc: '长枪如龙',
                 maxTargets: 1
             },
             archer: {
@@ -499,22 +502,27 @@
                 extraRange: [
                     [0, 3],
                     [1, 2],
-                    [-1, 2]
+                    [-1, 2],
+                    [0,1]
                 ],
-                desc: '前方远射',
+                desc: '百步穿杨',
                 maxTargets: 1
             },
             assassin: {
                 name: '卫士',
                 shortName: '卫',
                 hp: 15,
-                atk: 9,
+                atk: 8,
                 def: 6,
                 ap: 8,
                 extraRange: [
-                    [0, -1]
+                    [0, 1],
+                    [1,-1],
+                    [-1, -1],
+                    [1,1],
+                    [-1,1]
                 ],
-                desc: '后方+1格',
+                desc: '镇卫八方',
                 maxTargets: 1
             },
             mage: {
@@ -525,11 +533,12 @@
                 def: 4,
                 ap: 10,
                 extraRange: [
+                    [0, 1],
                     [0, 2],
                     [-1, 2],
                     [1, 2]
                 ],
-                desc: '前方第2行3格范围攻击（最多2目标）',
+                desc: '一计再连一计',
                 maxTargets: 2
             },
             sword: {
@@ -541,9 +550,10 @@
                 ap: 10,
                 extraRange: [
                     [-1, 1],
-                    [1, 1]
+                    [1, 1],
+                    [0,1]
                 ],
-                desc: '前方3格横扫',
+                desc: '横扫六合',
                 maxTargets: 1
             }
         };
@@ -558,8 +568,9 @@
 
         // ==================== 单位类 ====================
         class Unit {
-            constructor(id, cls, x, y, facing, faction) {
+            constructor(id, cls, x, y, facing, faction,initOrder) {
                 this.id = id;
+                
                 this.cls = cls;
                 const template = CLASS_TEMPLATES[cls];
                 this.name = template.name;
@@ -584,6 +595,8 @@
 
                 this.shakeTime = 0;
                 this.deathTime = 0;
+                this.initOrder = initOrder;
+
             }
 
             defense(units) {
@@ -641,7 +654,9 @@
                 this.lastTime = performance.now();
                 this.animationFrame = null;
                 this.aiStepCount = 0;
-
+                this.playerQueue = [];      // 玩家存活单位队列（按编号排序）
+                this.enemyQueue = [];       // 敌方存活单位队列（按编号排序）
+                this.nextFaction = 'player'; // 下一行动方（'player' 或 'enemy'）
                 this.riverCells = new Set();
                 this.bridgeCells = new Set();
                 this.terrainColors = {};
@@ -845,8 +860,18 @@
             }
 
             buildActionOrder() {
-                const players = this.units.filter(u => u.faction === 'player' && !u.dead);
-                const enemies = this.units.filter(u => u.faction === 'enemy' && !u.dead);
+                let players = this.units.filter(u => u.faction === 'player' && !u.dead);
+                let enemies = this.units.filter(u => u.faction === 'enemy' && !u.dead);
+                
+                // 按编号排序，确保始终 p1, p2, ... 和 e1, e2, ...
+                const sortById = (a, b) => {
+                    const numA = parseInt(a.id.slice(1), 10);
+                    const numB = parseInt(b.id.slice(1), 10);
+                    return numA - numB;
+                };
+                players.sort(sortById);
+                enemies.sort(sortById);
+                
                 const order = [];
                 const maxLen = Math.max(players.length, enemies.length);
                 for (let i = 0; i < maxLen; i++) {
@@ -855,7 +880,6 @@
                 }
                 return order;
             }
-
             getNextActiveUnit() {
                 for (const u of this.actionOrder) {
                     if (!u.acted && !u.dead) return u;
@@ -864,7 +888,13 @@
             }
 
             startNewRound() {
-                this.actionOrder = this.buildActionOrder();
+                this.playerQueue = this.units
+                    .filter(u => u.faction === 'player' && !u.dead)
+                    .sort((a, b) => a.initOrder - b.initOrder);
+                this.enemyQueue = this.units
+                    .filter(u => u.faction === 'enemy' && !u.dead)
+                    .sort((a, b) => a.initOrder - b.initOrder);
+
                 for (const u of this.units) {
                     u.acted = false;
                     u.hasUsedNormalAttack = false;
@@ -874,29 +904,70 @@
                 this.currentUnit = null;
                 this.pendingMode = null;
                 this.aiStepCount = 0;
+                this.nextFaction = 'player';
                 this.advanceTurn();
             }
 
+            getNextFromQueue() {
+                let unit = null;
+                if (this.nextFaction === 'player') {
+                    while (this.playerQueue.length > 0) {
+                        const u = this.playerQueue.shift();
+                        if (!u.dead) { unit = u; break; }
+                    }
+                    if (unit) {
+                        this.nextFaction = 'enemy';
+                        return unit;
+                    } else {
+                        // 玩家队列空了，如果敌方也没了，直接返回 null 结束回合
+                        if (this.enemyQueue.length === 0) {
+                            return null;
+                        }
+                        // 敌方还有单位，让敌方连续行动
+                        this.nextFaction = 'enemy';
+                        return this.getNextFromQueue();
+                    }
+                } else { // nextFaction === 'enemy'
+                    while (this.enemyQueue.length > 0) {
+                        const u = this.enemyQueue.shift();
+                        if (!u.dead) { unit = u; break; }
+                    }
+                    if (unit) {
+                        this.nextFaction = 'player';
+                        return unit;
+                    } else {
+                        if (this.playerQueue.length === 0) {
+                            return null;
+                        }
+                        this.nextFaction = 'player';
+                        return this.getNextFromQueue();
+                    }
+                }
+            } 
             advanceTurn() {
                 if (this.gameOver) return;
-                const nextUnit = this.getNextActiveUnit();
+
+                const nextUnit = this.getNextFromQueue();
                 if (!nextUnit) {
+                    // 双方队列都空，进入下一回合
                     this.turnCount++;
                     this.log(`=== 第${this.turnCount}回合 ===`, 'system');
                     this.startNewRound();
                     return;
                 }
+
                 this.currentUnit = nextUnit;
+                // 重置当前单位的 AP，清空攻击状态（保持原有逻辑）
                 this.currentUnit.curAp = this.currentUnit.apMax;
                 this.currentUnit.hasUsedNormalAttack = false;
                 this.currentUnit.hasUsedAlloutAttack = false;
+
                 if (this.currentUnit.faction === 'player') {
                     this.onPlayerTurn();
                 } else {
                     this.onEnemyTurn();
                 }
             }
-
             onPlayerTurn() {
                 this.aiBusy = false;
                 this.selectedUnit = this.currentUnit;
@@ -969,6 +1040,7 @@
                         enemy.dead = true;
                         enemy.deathTime = Date.now();
                     }
+                    this.reassignUnitIds();
 
                     this.addDamageText(enemy, dmg);
                     this.addAttackEffect(this.selectedUnit, enemy);
@@ -1045,7 +1117,25 @@
                     this.log(`[敌方] ${attacker.name} 普通攻击${enemyTargets.length}个目标`, 'damage');
                 }
             }
+            getDisplayName(unit) {
+                const side = unit.faction === 'player' ? '玩家' : '敌方';
+                return `${side} ${unit.name}(${unit.id})`;
+            }
+            reassignUnitIds() {
+                // 分别处理玩家和敌方
+                const players = this.units.filter(u => u.faction === 'player' && !u.dead);
+                const enemies = this.units.filter(u => u.faction === 'enemy' && !u.dead);
 
+                // 敌方按 y 升序、x 升序排序（上方先）
+                enemies.sort((a, b) => a.y - b.y || a.x - b.x);
+                enemies.forEach((u, i) => { u.id = `e${i + 1}`; });
+
+                // 玩家按 y 降序、x 升序排序（下方先）
+                players.sort((a, b) => b.y - a.y || a.x - b.x);
+                players.forEach((u, i) => { u.id = `p${i + 1}`; });
+
+                // 已死亡的单位保留原 id 或可忽略
+            }
             endUnitTurn(unit = this.selectedUnit) {
                 if (!unit) return;
                 if (unit.dead) {
@@ -1121,7 +1211,6 @@
 
             getBaseAttackCells(unit) {
                 const base = [
-                    [0, 1],
                     [-1, 0],
                     [1, 0]
                 ];
@@ -1573,9 +1662,9 @@
                     unitInfo.innerHTML = `
                         <div class="info-line"><span class="label">位置:</span> (${u.x},${u.y}) 朝向${u.facing}</div>
                         <div class="info-line"><span class="label">体力:</span> <span class="highlight">${u.hp}/${u.maxHp}</span></div>
-                        <div class="info-line"><span class="label">行动点:</span> <span class="highlight">${u.curAp}/${u.apMax}</span></div>
+                        <div class="info-line"><span class="label">行动点:</span> <span class="highlight">${u.curAp}/${u.apMax}</span>(结束时回复hp)</div>
                         <div class="info-line"><span class="label">攻击力:</span> ${u.attackPower()}${!u.hasEngaged ? ' (首次-2)' : ''}</div>
-                        <div class="info-line"><span class="label">防御力:</span> ${u.defense(this.units)} (基础${u.defBase}+站位)</div>
+                        <div class="info-line"><span class="label">防御力:</span> ${u.defense(this.units)} (基础${u.defBase}+临近站位)</div>
                         <div class="info-line"><span class="label">普通攻击:</span> ${u.hasUsedNormalAttack ? '已用' : '<span style="color:#5dbe7e;">可用</span>'}</div>
                         <div class="info-line"><span class="label">奋力再击:</span> ${u.curAp>=5 ? '<span style="color:#ffaa30;">可用</span>' : '不可用'}</div>
                         <div class="info-line" style="color:#ffd700;margin-top:6px;">${CLASS_TEMPLATES[u.cls].desc}</div>
