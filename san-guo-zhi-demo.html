@@ -1,209 +1,472 @@
-
-<!-- html_code = ''' -->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>战棋Demo · HTML5版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>象战棋 · 楚汉争锋</title>
     <style>
+        :root {
+            --bg: #1a1a2e;
+            --panel-bg: #1c2541;
+            --gold: #c9a96e;
+            --red: #b5343a;
+            --dark: #2c2c2c;
+            --cream: #f5e6c8;
+            --wood: #8b6914;
+            --river: #2a5f7a;
+            --bridge: #a0845c;
+            --btn-red: #c0392b;
+            --btn-gold: #b8860b;
+            --btn-blue: #2c5f8a;
+            --text-light: #e8dcc8;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
-            background: #1a1a2e;
-            color: #fff;
-            font-family: "Microsoft YaHei", "SimHei", sans-serif;
-            overflow: hidden;
+            background: #1a1a24;
+            background-image:
+                radial-gradient(ellipse at center, #1f2538 0%, #0d0d18 100%);
+            color: var(--text-light);
+            font-family: "Noto Serif SC", "STSong", "SimSun", "KaiTi", "Microsoft YaHei", "SimHei", serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
+            padding: 8px;
+            overflow-y: auto;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
         }
+
         #gameContainer {
             display: flex;
-            gap: 20px;
-            padding: 20px;
+            gap: 16px;
+            padding: 12px;
+            background: rgba(20, 18, 14, 0.7);
+            border-radius: 16px;
+            box-shadow:
+                0 20px 60px rgba(0, 0, 0, 0.6),
+                0 0 0 3px rgba(180, 140, 70, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.03);
+            border: 2px solid #5a4320;
+            max-width: 98vw;
+            align-items: stretch;
         }
+
+        #canvasWrapper {
+            flex-shrink: 0;
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.5),
+                0 0 0 3px #3d2b14,
+                0 0 0 6px rgba(160, 120, 50, 0.3);
+            border: 2px solid #6b4c20;
+            background: #2a1f10;
+        }
+
         canvas {
-            border-radius: 8px;
+            display: block;
             cursor: pointer;
+            border-radius: 6px;
+            image-rendering: auto;
         }
+
         #panel {
-            width: 320px;
-            background: #0f3460;
-            border-radius: 8px;
-            padding: 15px;
+            background: linear-gradient(180deg, #1c1f2e 0%, #161a28 100%);
+            border-radius: 12px;
+            padding: 14px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            height: 560px;
+            gap: 8px;
+            border: 2px solid #3d3520;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 6px 20px rgba(0, 0, 0, 0.4);
+            min-width: 260px;
+            transition: all 0.3s ease;
         }
+
         #turnInfo {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
-            padding: 10px;
-            border-radius: 6px;
+            padding: 10px 14px;
+            border-radius: 8px;
             text-align: center;
+            letter-spacing: 1px;
+            transition: all 0.35s;
+            border: 2px solid transparent;
         }
         .player-turn {
-            background: #2962ff;
-            color: #fff;
+            background: linear-gradient(135deg, #3a1c1c, #5a2a2a);
+            color: #ffd700;
+            border-color: #c9a050 !important;
+            text-shadow: 0 0 12px rgba(255, 200, 50, 0.5);
         }
         .enemy-turn {
-            background: #d50000;
-            color: #fff;
+            background: linear-gradient(135deg, #1c1c2e, #2a2a3a);
+            color: #c0c0c0;
+            border-color: #555 !important;
+            text-shadow: 0 0 8px rgba(180, 180, 200, 0.3);
         }
         .game-over {
-            background: #ff5050;
-            color: #fff;
+            background: linear-gradient(135deg, #3a1010, #5a1a1a);
+            color: #ff6666;
+            border-color: #ff4444 !important;
+            animation: pulseOver 1s ease-in-out infinite;
         }
+        @keyframes pulseOver {
+            0%,
+            100% {
+                box-shadow: 0 0 10px rgba(255, 60, 60, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 28px rgba(255, 60, 60, 0.9);
+            }
+        }
+
         #unitInfo {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 12px;
-            border-radius: 6px;
-            min-height: 180px;
-            font-size: 14px;
-            line-height: 1.8;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 10px 12px;
+            border-radius: 8px;
+            min-height: 140px;
+            font-size: 13px;
+            line-height: 1.7;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s;
         }
         #unitInfo .info-line {
-            margin: 4px 0;
+            margin: 2px 0;
+            font-size: 12px;
         }
         #unitInfo .label {
-            color: #aaa;
+            color: #b0a080;
+            font-weight: bold;
         }
+        #unitInfo .highlight {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .section-title {
+            color: #c9a050;
+            font-size: 13px;
+            margin: 4px 0 2px;
+            letter-spacing: 2px;
+            text-align: center;
+            font-weight: bold;
+            text-shadow: 0 0 6px rgba(200, 160, 60, 0.4);
+        }
+
         #buttons {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 7px;
             justify-content: center;
         }
         .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
+            padding: 9px 15px;
+            border: 2px solid #555;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 13px;
             font-family: inherit;
+            letter-spacing: 1px;
             transition: all 0.2s;
             color: #fff;
+            background: #2a2d3a;
+            font-weight: bold;
+            white-space: nowrap;
+            min-height: 40px;
+            touch-action: manipulation;
         }
         .btn:hover {
             transform: translateY(-2px);
-            opacity: 0.9;
+            opacity: 0.92;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
         }
         .btn:active {
             transform: translateY(0);
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
         }
         .btn-end {
-            background: #2962ff;
+            background: linear-gradient(180deg, #3a5a8c, #1e3a5f);
+            border-color: #4a80c0;
+            color: #e0e8f8;
         }
         .btn-attack {
-            background: #ff3232;
+            background: linear-gradient(180deg, #8b2a2a, #5a1a1a);
+            border-color: #c04040;
+            color: #ffe0e0;
         }
         .btn-attack.active {
-            background: #ff0000;
-            box-shadow: 0 0 10px #ff0000;
+            background: linear-gradient(180deg, #c03030, #801818);
+            border-color: #ff5555;
+            box-shadow: 0 0 18px rgba(255, 50, 50, 0.7);
+            animation: glowRed 0.7s ease-in-out infinite;
+        }
+        @keyframes glowRed {
+            0%,
+            100% {
+                box-shadow: 0 0 14px rgba(255, 50, 50, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 26px rgba(255, 50, 50, 0.9);
+            }
         }
         .btn-allout {
-            background: #ff8c00;
+            background: linear-gradient(180deg, #9a5a10, #6a3a08);
+            border-color: #d09030;
+            color: #ffe8c0;
         }
         .btn-allout.active {
-            background: #ff6600;
-            box-shadow: 0 0 10px #ff6600;
+            background: linear-gradient(180deg, #c07018, #8a4010);
+            border-color: #ffaa30;
+            box-shadow: 0 0 18px rgba(255, 140, 30, 0.7);
+            animation: glowGold 0.7s ease-in-out infinite;
+        }
+        @keyframes glowGold {
+            0%,
+            100% {
+                box-shadow: 0 0 14px rgba(255, 140, 30, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 26px rgba(255, 140, 30, 0.9);
+            }
         }
         .btn-dir {
-            background: #505064;
-            width: 60px;
-            padding: 6px;
+            background: #353a48;
+            border-color: #555;
+            min-width: 48px;
+            padding: 8px 6px;
+            font-size: 15px;
+            letter-spacing: 0;
+            flex: 1;
+            min-width: 42px;
         }
         .btn:disabled {
-            background: #444;
+            background: #1a1a22 !important;
+            border-color: #333 !important;
             cursor: not-allowed;
-            opacity: 0.5;
+            opacity: 0.45;
+            color: #666 !important;
+            box-shadow: none !important;
+            animation: none !important;
         }
+
         #log {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid #505064;
-            border-radius: 6px;
-            padding: 10px;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid #3a3528;
+            border-radius: 8px;
+            padding: 8px 10px;
             flex: 1;
             overflow-y: auto;
-            font-size: 12px;
+            font-size: 11px;
             line-height: 1.6;
-            max-height: 200px;
+            max-height: 160px;
+            font-family: "Microsoft YaHei", "SimHei", sans-serif;
+            letter-spacing: 0.5px;
         }
         #log .log-entry {
             margin: 2px 0;
-            color: #aaa;
+            color: #999;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 11px;
         }
         #log .log-entry.damage {
-            color: #ff6b6b;
+            color: #ff7777;
+            background: rgba(180, 40, 40, 0.15);
         }
         #log .log-entry.heal {
-            color: #00e676;
+            color: #5dbe7e;
+            background: rgba(40, 140, 80, 0.15);
         }
         #log .log-entry.system {
-            color: #ffd700;
+            color: #e0c060;
+            background: rgba(160, 120, 30, 0.15);
+            font-weight: bold;
         }
-        .section-title {
-            color: #ffd700;
-            font-size: 14px;
-            margin: 8px 0 4px;
+
+        /* ============ 响应式设计 ============ */
+        @media (max-width: 850px) {
+            #gameContainer {
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+                padding: 8px;
+                border-radius: 12px;
+            }
+            #canvasWrapper {
+                order: 1;
+                border-radius: 8px;
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 0 2px #3d2b14, 0 0 0 5px rgba(160, 120, 50, 0.25);
+            }
+            canvas {
+                max-width: 100%;
+                height: auto !important;
+            }
+            #panel {
+                order: 2;
+                width: 100%;
+                max-width: 500px;
+                min-width: auto;
+                padding: 10px;
+                gap: 6px;
+                border-radius: 10px;
+            }
+            #turnInfo {
+                font-size: 14px;
+                padding: 8px 10px;
+            }
+            #unitInfo {
+                min-height: 100px;
+                font-size: 11px;
+                padding: 8px 10px;
+            }
+            #unitInfo .info-line {
+                font-size: 11px;
+            }
+            .btn {
+                padding: 10px 12px;
+                font-size: 12px;
+                min-height: 38px;
+                border-radius: 7px;
+            }
+            .btn-dir {
+                min-width: 38px;
+                padding: 10px 4px;
+                font-size: 14px;
+            }
+            #buttons-dir {
+                gap: 3px !important;
+            }
+            #log {
+                max-height: 100px;
+                font-size: 10px;
+            }
+            .section-title {
+                font-size: 11px;
+                margin: 2px 0;
+            }
+        }
+
+        @media (max-width: 400px) {
+            body {
+                padding: 2px;
+            }
+            #gameContainer {
+                padding: 4px;
+                gap: 6px;
+                border-radius: 8px;
+                border-width: 1px;
+            }
+            #panel {
+                padding: 7px;
+                gap: 4px;
+                border-radius: 8px;
+            }
+            .btn {
+                padding: 9px 8px;
+                font-size: 11px;
+                min-height: 34px;
+                letter-spacing: 0;
+            }
+            .btn-dir {
+                min-width: 32px;
+                padding: 9px 2px;
+                font-size: 12px;
+            }
+            #turnInfo {
+                font-size: 13px;
+                padding: 6px 8px;
+            }
+            #unitInfo {
+                min-height: 80px;
+                font-size: 10px;
+                padding: 6px 8px;
+            }
+            #unitInfo .info-line {
+                font-size: 10px;
+                margin: 1px 0;
+            }
+            #log {
+                max-height: 70px;
+                font-size: 9px;
+                padding: 5px 7px;
+            }
+            .section-title {
+                font-size: 10px;
+            }
+        }
+
+        /* 自定义滚动条 */
+        #log::-webkit-scrollbar {
+            width: 4px;
+        }
+        #log::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+        #log::-webkit-scrollbar-thumb {
+            background: #5a4a30;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
     <div id="gameContainer">
-        <canvas id="board" width="456" height="560"></canvas>
+        <div id="canvasWrapper">
+            <canvas id="board"></canvas>
+        </div>
         <div id="panel">
             <div id="turnInfo">🛡️ 玩家行动 (第1回合)</div>
             <div id="unitInfo">
-                <div style="color:#aaa;text-align:center;padding:20px;">点击己方单位开始行动</div>
+                <div style="color:#aaa;text-align:center;padding:15px;">点击己方棋子开始行动</div>
             </div>
-            <div class="section-title">行动指令</div>
+            <div class="section-title">◆ 行动指令 ◆</div>
             <div id="buttons">
                 <button class="btn btn-end" id="btnEnd" onclick="game.endUnitTurn()">结束行动</button>
                 <button class="btn btn-attack" id="btnAttack" onclick="game.toggleAttackMode()">普通攻击</button>
                 <button class="btn btn-allout" id="btnAllout" onclick="game.toggleAlloutMode()">奋力再击</button>
             </div>
-            <div id="buttons-dir" style="display:flex;gap:5px;justify-content:center;">
+            <div id="buttons-dir" style="display:flex;gap:4px;justify-content:center;">
                 <button class="btn btn-dir" onclick="game.changeFacing('up')">↑上</button>
                 <button class="btn btn-dir" onclick="game.changeFacing('down')">↓下</button>
                 <button class="btn btn-dir" onclick="game.changeFacing('left')">←左</button>
                 <button class="btn btn-dir" onclick="game.changeFacing('right')">→右</button>
             </div>
-            <div class="section-title">战斗日志</div>
+            <div class="section-title">◆ 战斗日志 ◆</div>
             <div id="log"></div>
         </div>
     </div>
     <script>
         // ==================== 配置 ====================
         const BOARD_W = 8,
-            BOARD_H = 10,
-            CELL_SIZE = 52;
-        const COLORS = {
-            BG: '#0a1428',
-            BOARD_BG: '#1a2338',
-            CELL: '#2a2f45',
-            CELL_BORDER: '#3f4559',
-            CURRENT_TURN: '#ffd700',
-            PLAYER: '#2962ff',
-            ENEMY: '#d50000',
-            HP_GREEN: '#00e676',
-            OBSTACLE: '#1f2128',
-            OBSTACLE_BORDER: '#505050',
-            MOVE_RANGE: 'rgba(0,100,200,0.5)',
-            ATTACK_RANGE: 'rgba(180,40,40,0.5)',
-            PLAYER_ACTED: '#4a5a7a',
-            ENEMY_ACTED: '#7a4a4a',
-        };
+            BOARD_H = 10;
+
+        function calcCellSize() {
+            const w = window.innerWidth;
+            if (w <= 400) return Math.max(34, Math.floor((w - 24) / BOARD_W));
+            if (w <= 600) return Math.max(40, Math.floor((w - 40) / BOARD_W));
+            if (w <= 850) return Math.max(44, Math.floor((w - 60) / BOARD_W));
+            return 52;
+        }
+
+        function calcOffset(cellSize) {
+            return Math.max(8, Math.floor(cellSize * 0.28));
+        }
 
         const CLASS_TEMPLATES = {
             infantry: {
                 name: '步兵',
+                shortName: '步',
                 hp: 20,
                 atk: 8,
                 def: 5,
@@ -214,51 +477,72 @@
             },
             knight: {
                 name: '枪兵',
+                shortName: '枪',
                 hp: 16,
                 atk: 12,
                 def: 4,
                 ap: 12,
-                extraRange: [[0, 2], [0, 3]],
+                extraRange: [
+                    [0, 2],
+                    [0, 3]
+                ],
                 desc: '前方+2格冲锋',
                 maxTargets: 1
             },
             archer: {
                 name: '弓手',
+                shortName: '弓',
                 hp: 14,
                 atk: 10,
                 def: 4,
                 ap: 10,
-                extraRange: [[0, 3], [1, 2], [-1, 2]],
+                extraRange: [
+                    [0, 3],
+                    [1, 2],
+                    [-1, 2]
+                ],
                 desc: '前方远射',
                 maxTargets: 1
             },
             assassin: {
                 name: '卫士',
+                shortName: '卫',
                 hp: 15,
                 atk: 9,
                 def: 6,
                 ap: 8,
-                extraRange: [[0, -1]],
+                extraRange: [
+                    [0, -1]
+                ],
                 desc: '后方+1格',
                 maxTargets: 1
             },
             mage: {
-                name: '军师',
+                name: '策士',
+                shortName: '策',
                 hp: 12,
                 atk: 8,
                 def: 4,
                 ap: 10,
-                extraRange: [[0, 2], [-1, 2], [1, 2]],
+                extraRange: [
+                    [0, 2],
+                    [-1, 2],
+                    [1, 2]
+                ],
                 desc: '前方第2行3格范围攻击（最多2目标）',
                 maxTargets: 2
             },
             sword: {
                 name: '剑士',
+                shortName: '剑',
                 hp: 18,
                 atk: 11,
                 def: 5,
                 ap: 10,
-                extraRange: [[-1, 1], [1, 1]],
+                extraRange: [
+                    [-1, 1],
+                    [1, 1]
+                ],
                 desc: '前方3格横扫',
                 maxTargets: 1
             }
@@ -279,6 +563,7 @@
                 this.cls = cls;
                 const template = CLASS_TEMPLATES[cls];
                 this.name = template.name;
+                this.shortName = template.shortName;
                 this.x = x;
                 this.y = y;
                 this.facing = facing;
@@ -333,6 +618,15 @@
             constructor() {
                 this.canvas = document.getElementById('board');
                 this.ctx = this.canvas.getContext('2d');
+
+                this.cellSize = calcCellSize();
+                this.offsetX = calcOffset(this.cellSize);
+                this.offsetY = calcOffset(this.cellSize);
+                this.canvasWidth = this.offsetX * 2 + BOARD_W * this.cellSize;
+                this.canvasHeight = this.offsetY * 2 + BOARD_H * this.cellSize;
+                this.canvas.width = this.canvasWidth;
+                this.canvas.height = this.canvasHeight;
+
                 this.units = [];
                 this.selectedUnit = null;
                 this.currentUnit = null;
@@ -348,12 +642,25 @@
                 this.animationFrame = null;
                 this.aiStepCount = 0;
 
-                // 地形系统
                 this.riverCells = new Set();
                 this.bridgeCells = new Set();
                 this.terrainColors = {};
 
                 this.canvas.addEventListener('click', (e) => this.handleClick(e));
+                this.canvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    if (e.changedTouches.length === 1) {
+                        const touch = e.changedTouches[0];
+                        const rect = this.canvas.getBoundingClientRect();
+                        const fakeEvent = {
+                            clientX: touch.clientX,
+                            clientY: touch.clientY,
+                            target: this.canvas
+                        };
+                        Object.defineProperty(fakeEvent, 'target', { value: this.canvas });
+                        this.handleClick(fakeEvent);
+                    }
+                });
 
                 this.initRiver();
                 this.initObstacles();
@@ -361,18 +668,37 @@
                 this.initUnits();
                 this.startNewRound();
                 this.gameLoop();
+
+                this._resizeHandler = this.handleResize.bind(this);
+                window.addEventListener('resize', this._resizeHandler);
             }
 
-            // ==================== 地形初始化 ====================
+            handleResize() {
+                clearTimeout(this._resizeTimeout);
+                this._resizeTimeout = setTimeout(() => {
+                    const newCellSize = calcCellSize();
+                    if (Math.abs(newCellSize - this.cellSize) >= 4) {
+                        this.cellSize = newCellSize;
+                        this.offsetX = calcOffset(this.cellSize);
+                        this.offsetY = calcOffset(this.cellSize);
+                        this.canvasWidth = this.offsetX * 2 + BOARD_W * this.cellSize;
+                        this.canvasHeight = this.offsetY * 2 + BOARD_H * this.cellSize;
+                        this.canvas.width = this.canvasWidth;
+                        this.canvas.height = this.canvasHeight;
+                        this.render();
+                        this.updateUI();
+                    }
+                }, 350);
+            }
+
             initRiver() {
                 const mid = Math.floor(BOARD_H / 2);
-                const y1 = mid - 1;  // 第4行
-                const y2 = mid;      // 第5行
+                const y1 = mid - 1;
+                const y2 = mid;
                 for (let x = 0; x < BOARD_W; x++) {
                     this.riverCells.add(`${x},${y1}`);
                     this.riverCells.add(`${x},${y2}`);
                 }
-                // 随机2列桥
                 const cols = [];
                 while (cols.length < 2) {
                     const c = Math.floor(Math.random() * BOARD_W);
@@ -389,22 +715,18 @@
                     for (let x = 0; x < BOARD_W; x++) {
                         const key = `${x},${y}`;
                         if (this.riverCells.has(key)) {
-                            // 河流深蓝
-                            this.terrainColors[key] = '#1a3a5c';
+                            this.terrainColors[key] = '#1e4a60';
                         } else if (this.bridgeCells.has(key)) {
-                            // 桥梁木色
-                            this.terrainColors[key] = '#8b6f47';
+                            this.terrainColors[key] = '#8b7355';
                         } else {
-                            // 草地与沙地混合（基于坐标的伪随机，保持一致性）
-                            const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
-                            const rand = hash - Math.floor(hash);
-                            if (rand > 0.55) {
-                                this.terrainColors[key] = '#b8a878'; // 沙地
-                            } else if (rand > 0.25) {
-                                this.terrainColors[key] = '#5a8f5f'; // 浅草地
-                            } else {
-                                this.terrainColors[key] = '#4a7c4e'; // 深草地
-                            }
+                            const ix = Math.floor(x);
+                            const iy = Math.floor(y);
+                            // 改成 4 种颜色交替，让黄绿对比更明显
+                            const hash = (ix * 7 + iy * 13) % 4;
+                            if (hash === 0) this.terrainColors[key] = '#c8b878';   // 浅黄
+                            else if (hash === 1) this.terrainColors[key] = '#7a9f5a'; // 草绿
+                            else if (hash === 2) this.terrainColors[key] = '#d4c488'; // 亮黄
+                            else if (hash === 3) this.terrainColors[key] = '#8fbc6a'; // 浅绿
                         }
                     }
                 }
@@ -414,10 +736,8 @@
                 const now = performance.now();
                 const dt = (now - this.lastTime) / 1000;
                 this.lastTime = now;
-
                 this.updateAnimations(dt);
                 this.render();
-
                 this.animationFrame = requestAnimationFrame(() => this.gameLoop());
             }
 
@@ -432,9 +752,8 @@
             }
 
             addDamageText(target, dmg) {
-                const screenX = target.x * CELL_SIZE + CELL_SIZE / 2;
-                const screenY = target.y * CELL_SIZE + CELL_SIZE / 2 - 15;
-
+                const screenX = target.x * this.cellSize + this.cellSize / 2 + this.offsetX;
+                const screenY = target.y * this.cellSize + this.cellSize / 2 - 12 + this.offsetY;
                 this.animations.push({
                     type: 'damage',
                     value: dmg,
@@ -446,15 +765,14 @@
             }
 
             addAttackEffect(attacker, target) {
-                const ax = attacker.x * CELL_SIZE + CELL_SIZE / 2;
-                const ay = attacker.y * CELL_SIZE + CELL_SIZE / 2;
-                const tx = target.x * CELL_SIZE + CELL_SIZE / 2;
-                const ty = target.y * CELL_SIZE + CELL_SIZE / 2;
-
+                const ax = attacker.x * this.cellSize + this.cellSize / 2 + this.offsetX;
+                const ay = attacker.y * this.cellSize + this.cellSize / 2 + this.offsetY;
+                const tx = target.x * this.cellSize + this.cellSize / 2 + this.offsetX;
+                const ty = target.y * this.cellSize + this.cellSize / 2 + this.offsetY;
                 this.animations.push({
                     type: 'attackEffect',
                     screenX: (ax + tx) / 2,
-                    screenY: (ay + ty) / 2 - 10,
+                    screenY: (ay + ty) / 2 - 8,
                     time: 0,
                     duration: 0.45
                 });
@@ -483,11 +801,22 @@
                     for (let y = 0; y < BOARD_H; y++) allPos.push([x, y]);
                 }
                 const unitPos = this.basePositions().map(p => [p[2], p[3]]);
+                // 收集所有橋的上下鄰格（橋的入口）
+                const bridgeAdjacent = new Set();
+                for (const bKey of this.bridgeCells) {
+                    const [bx, by] = bKey.split(',').map(Number);
+                    // 橋的上方一格
+                    if (by - 1 >= 0) bridgeAdjacent.add(`${bx},${by - 1}`);
+                    // 橋的下方一格
+                    if (by + 1 < BOARD_H) bridgeAdjacent.add(`${bx},${by + 1}`);
+                }
+
                 const available = allPos.filter(p => {
                     const key = `${p[0]},${p[1]}`;
                     return !unitPos.some(up => up[0] === p[0] && up[1] === p[1])
                         && !this.riverCells.has(key)
-                        && !this.bridgeCells.has(key);
+                        && !this.bridgeCells.has(key)
+                        && !bridgeAdjacent.has(key);  // 新增：排除橋的入口
                 });
                 const count = Math.min(6, available.length);
                 for (let i = 0; i < count; i++) {
@@ -561,7 +890,6 @@
                 this.currentUnit.curAp = this.currentUnit.apMax;
                 this.currentUnit.hasUsedNormalAttack = false;
                 this.currentUnit.hasUsedAlloutAttack = false;
-
                 if (this.currentUnit.faction === 'player') {
                     this.onPlayerTurn();
                 } else {
@@ -594,11 +922,13 @@
                 if (this.selectedUnit !== this.currentUnit) return;
 
                 const atkCells = this.getBaseAttackCells(this.selectedUnit);
+                // ① 先确保点击的敌人在攻击范围内
                 if (!atkCells.some(c => c[0] === target.x && c[1] === target.y)) {
                     this.log('目标不在攻击范围内！');
                     return;
                 }
 
+                // ② AP 检查
                 if (isAllout) {
                     if (this.selectedUnit.hasUsedAlloutAttack || this.selectedUnit.curAp < 5) return;
                 } else {
@@ -608,17 +938,25 @@
                 const template = CLASS_TEMPLATES[this.selectedUnit.cls];
                 const maxTargets = template.maxTargets || 1;
 
-                let enemyTargets = this.units.filter(u =>
-                    u.faction !== this.selectedUnit.faction && !u.dead &&
-                    atkCells.some(c => c[0] === u.x && c[1] === u.y)
-                );
+                // ★★★ 核心改动：定死攻击列表，优先你点击的目标 ★★★
+                let targetsToHit = [target];   // 点击的敌人必打
 
-                if (maxTargets < enemyTargets.length) {
-                    enemyTargets.sort((a, b) => (a.y * 100 + a.x) - (b.y * 100 + b.x));
-                    enemyTargets = enemyTargets.slice(0, maxTargets);
+                // 如果兵种可以打多个目标（如军师 maxTargets=2），再自动补选
+                if (maxTargets > 1) {
+                    const others = this.units.filter(u =>
+                        u.faction !== this.selectedUnit.faction && !u.dead &&
+                        u !== target &&   // 排除自己选中的
+                        atkCells.some(c => c[0] === u.x && c[1] === u.y)
+                    );
+                    // 按距离近的优先（保持稳定）
+                    others.sort((a, b) => (Math.abs(a.x - target.x) + Math.abs(a.y - target.y)) -
+                                        (Math.abs(b.x - target.x) + Math.abs(b.y - target.y)));
+                    const extraCount = maxTargets - 1;
+                    targetsToHit = [target, ...others.slice(0, extraCount)];
                 }
 
-                for (const enemy of enemyTargets) {
+                // ③ 执行攻击（只对 targetsToHit 里的单位）
+                for (const enemy of targetsToHit) {
                     const atkPow = this.selectedUnit.attackPower();
                     const tarDef = enemy.defense(this.units);
                     const dmg = Math.max(0, atkPow - tarDef);
@@ -639,14 +977,15 @@
                     if (enemy.dead) this.log(`${enemy.name} 被击败！`, 'system');
                 }
 
+                // ④ 消耗 AP 与状态更新
                 if (isAllout) {
                     this.selectedUnit.curAp = 0;
                     this.selectedUnit.hasUsedAlloutAttack = true;
-                    this.log(`${this.selectedUnit.name} 发动再击，攻击${enemyTargets.length}个目标！`, 'damage');
+                    this.log(`${this.selectedUnit.name} 发动再击，攻击${targetsToHit.length}个目标！`, 'damage');
                 } else {
                     this.selectedUnit.curAp -= 3;
                     this.selectedUnit.hasUsedNormalAttack = true;
-                    this.log(`${this.selectedUnit.name} 普通攻击，攻击${enemyTargets.length}个目标`, 'damage');
+                    this.log(`${this.selectedUnit.name} 普通攻击，攻击${targetsToHit.length}个目标`, 'damage');
                 }
 
                 this.pendingMode = null;
@@ -654,32 +993,35 @@
                 this.updateUI();
                 this.render();
             }
-
             performAttackAi(attacker, target, isAllout) {
-                if ((attacker.hasUsedAlloutAttack && isAllout) || (attacker.hasUsedNormalAttack && !isAllout)) return;
+                if ((attacker.hasUsedAlloutAttack && isAllout) || (attacker.hasUsedNormalAttack && !isAllout))
+            return;
                 const atkCells = this.getBaseAttackCells(attacker);
                 if (!atkCells.some(c => c[0] === target.x && c[1] === target.y)) return;
                 if (isAllout && attacker.curAp < 5) return;
                 if (!isAllout && attacker.curAp < 3) return;
-
-                const template = CLASS_TEMPLATES[attacker.cls];
+                const template = CLASS_TEMPLATES[this.selectedUnit.cls];
                 const maxTargets = template.maxTargets || 1;
 
-                let enemyTargets = this.units.filter(u =>
-                    u.faction !== attacker.faction && !u.dead &&
-                    atkCells.some(c => c[0] === u.x && c[1] === u.y)
-                );
+                // 以玩家点击的目标为第一优先级
+                let enemyTargets = [target];
 
-                if (maxTargets < enemyTargets.length) {
-                    enemyTargets.sort((a, b) => (a.y * 100 + a.x) - (b.y * 100 + b.x));
-                    enemyTargets = enemyTargets.slice(0, maxTargets);
+                // 如果该兵种可攻击多个目标（如军师），再自动补充攻击范围内的其他敌人
+                if (maxTargets > 1) {
+                    const others = this.units.filter(u =>
+                        u.faction !== this.selectedUnit.faction && !u.dead &&
+                        u !== target &&
+                        atkCells.some(c => c[0] === u.x && c[1] === u.y)
+                    );
+                    // 按距离排序补充
+                    others.sort((a, b) => (a.y * 100 + a.x) - (b.y * 100 + b.x));
+                    const extra = others.slice(0, maxTargets - 1);
+                    enemyTargets = [target, ...extra];
                 }
-
                 for (const enemy of enemyTargets) {
                     const atkPow = attacker.attackPower();
                     const tarDef = enemy.defense(this.units);
                     const dmg = Math.max(0, atkPow - tarDef);
-
                     enemy.hp -= dmg;
                     if (enemy.hp <= 0) {
                         enemy.hp = 0;
@@ -688,13 +1030,11 @@
                     }
                     attacker.hasEngaged = true;
                     enemy.hasEngaged = true;
-
                     this.addDamageText(enemy, dmg);
                     this.addAttackEffect(attacker, enemy);
                     enemy.shakeTime = 0.35;
                     if (enemy.dead) this.log(`${enemy.name} 被击败！`, 'system');
                 }
-
                 if (isAllout) {
                     attacker.curAp = 0;
                     attacker.hasUsedAlloutAttack = true;
@@ -717,7 +1057,6 @@
                     this.advanceTurn();
                     return;
                 }
-
                 let enemyCount = 0;
                 for (let dy = -1; dy <= 1; dy++) {
                     for (let dx = -1; dx <= 1; dx++) {
@@ -726,12 +1065,10 @@
                         if (u && u.faction !== unit.faction && !u.dead) enemyCount++;
                     }
                 }
-
                 const heal = unit.curAp - enemyCount;
                 const oldHp = unit.hp;
                 unit.hp = Math.max(0, Math.min(unit.maxHp, unit.hp + heal));
                 const actual = unit.hp - oldHp;
-
                 if (unit.hp <= 0) {
                     unit.hp = 0;
                     unit.dead = true;
@@ -742,8 +1079,6 @@
                 } else if (actual < 0) {
                     this.log(`${unit.name} 受到${-actual}点压力伤害！`, 'damage');
                 }
-
-                // ★ 河流溺水伤害 ★
                 if (!unit.dead) {
                     const inRiver = this.riverCells.has(`${unit.x},${unit.y}`);
                     const onBridge = this.bridgeCells.has(`${unit.x},${unit.y}`);
@@ -758,12 +1093,10 @@
                         }
                     }
                 }
-
                 unit.acted = true;
                 this.selectedUnit = null;
                 this.currentUnit = null;
                 this.pendingMode = null;
-
                 if (this.checkGameOver()) return;
                 this.advanceTurn();
             }
@@ -812,7 +1145,6 @@
                     [unit.x, unit.y, 0]
                 ];
                 let head = 0;
-
                 while (head < queue.length) {
                     const [x, y, cost] = queue[head++];
                     if (cost > 0) reachable[`${x},${y}`] = cost;
@@ -828,13 +1160,10 @@
                         if (nx < 0 || nx >= BOARD_W || ny < 0 || ny >= BOARD_H) continue;
                         if (this.obstacles.has(`${nx},${ny}`)) continue;
                         if (getUnitAt(this.units, nx, ny)) continue;
-                        
-                        // ★ 河流消耗4AP，桥梁正常1AP ★
                         const isRiver = this.riverCells.has(`${nx},${ny}`);
                         const isBridge = this.bridgeCells.has(`${nx},${ny}`);
                         let stepCost = 1;
                         if (isRiver && !isBridge) stepCost = 4;
-                        
                         const key = `${nx},${ny}`;
                         const newCost = cost + stepCost;
                         if (!visited.has(key) || visited.get(key) > newCost) {
@@ -853,26 +1182,24 @@
                 const moves = this.getMoveCells(this.selectedUnit);
                 const key = `${x},${y}`;
                 if (!(key in moves)) return;
-
                 const cost = moves[key];
                 this.selectedUnit.x = x;
                 this.selectedUnit.y = y;
                 this.selectedUnit.curAp -= cost;
-                
                 const isRiver = this.riverCells.has(key);
                 const isBridge = this.bridgeCells.has(key);
                 let terrainMsg = '';
                 if (isRiver && !isBridge) terrainMsg = '（渡河）';
                 else if (isBridge) terrainMsg = '（过桥）';
-                
-                this.log(`${this.selectedUnit.name} 移动到 (${x},${y})${terrainMsg}，消耗${cost}AP，剩余AP:${this.selectedUnit.curAp}`);
+                this.log(
+                    `${this.selectedUnit.name} 移动到 (${x},${y})${terrainMsg}，消耗${cost}AP，剩余AP:${this.selectedUnit.curAp}`
+                    );
                 this.updateUI();
             }
 
             // ==================== AI部分 ====================
             aiStep() {
                 if (!this.aiBusy || this.gameOver) return;
-                
                 this.aiStepCount++;
                 if (this.aiStepCount > 50) {
                     this.log(`[系统] ${this.currentUnit?.name || '敌方单位'} 行动超时，强制结束回合`, 'system');
@@ -884,46 +1211,35 @@
                     this.advanceTurn();
                     return;
                 }
-
                 const unit = this.currentUnit;
                 if (!unit || unit.dead || unit.acted) {
                     this.aiBusy = false;
                     this.advanceTurn();
                     return;
                 }
-
                 const targets = this.units.filter(u => u.faction !== unit.faction && !u.dead);
                 if (!targets.length) {
                     this.aiBusy = false;
                     this.advanceTurn();
                     return;
                 }
-
-                // 判断是否在河中
                 const unitKey = `${unit.x},${unit.y}`;
                 const inRiver = this.riverCells.has(unitKey) && !this.bridgeCells.has(unitKey);
-
-                // 获取河流行
                 const riverRows = [];
                 for (let y = 0; y < BOARD_H; y++) {
                     if (this.riverCells.has(`0,${y}`)) riverRows.push(y);
                 }
                 const minRiverY = Math.min(...riverRows);
                 const maxRiverY = Math.max(...riverRows);
-
-                // 判断单位所在侧：0=上方，1=下方，-1=在河里
                 const getSide = (y) => {
                     if (y < minRiverY) return 0;
                     if (y > maxRiverY) return 1;
                     return -1;
                 };
                 const unitSide = getSide(unit.y);
-
-                // 分类目标
                 const sameSideTargets = targets.filter(t => getSide(t.y) === unitSide);
-                const otherSideTargets = targets.filter(t => getSide(t.y) !== unitSide && getSide(t.y) !== -1);
-
-                // 选择目标：优先同侧，否则选最近
+                const otherSideTargets = targets.filter(t => getSide(t.y) !== unitSide && getSide(t.y) !== -
+                    1);
                 let target;
                 if (sameSideTargets.length > 0) {
                     target = sameSideTargets.reduce((best, t) => {
@@ -938,20 +1254,19 @@
                         return d1 < d2 ? t : best;
                     });
                 }
-
                 const atkCells = this.getBaseAttackCells(unit);
-                
-                // 检查是否能直接攻击
                 if (atkCells.some(c => c[0] === target.x && c[1] === target.y)) {
                     if (!unit.hasUsedNormalAttack && unit.curAp >= 3) {
                         this.performAttackAi(unit, target, false);
-                        this.render(); this.updateUI();
+                        this.render();
+                        this.updateUI();
                         setTimeout(() => this.aiStep(), 500);
                         return;
                     }
                     if (!unit.hasUsedAlloutAttack && unit.curAp >= 5) {
                         this.performAttackAi(unit, target, true);
-                        this.render(); this.updateUI();
+                        this.render();
+                        this.updateUI();
                         setTimeout(() => this.aiStep(), 500);
                         return;
                     }
@@ -959,8 +1274,86 @@
                     this.endUnitTurn(unit);
                     return;
                 }
+                // ==================== 完善AI：低AP防御模式 ====================
+                // 条件：AP<5 且 (已经使用过普通攻击 或 无法再进行任何攻击)
+                if (unit.curAp < 3 && (unit.hasUsedNormalAttack || unit.curAp < 3)) {
+                    // 寻找最近的友军
+                    let closestFriend = null;
+                    let closestDist = Infinity;
+                    const friends = this.units.filter(u => u.faction === unit.faction && !u.dead && u !== unit);
+                    for (const f of friends) {
+                        const dist = Math.abs(unit.x - f.x) + Math.abs(unit.y - f.y);
+                        if (dist < closestDist) {
+                            closestDist = dist;
+                            closestFriend = f;
+                        }
+                    }
 
-                // 尝试转向攻击
+                    // 如果距离友军大于1格，尝试移动靠近
+                    if (closestFriend && closestDist > 1) {
+                        const moves = this.getMoveCells(unit);
+                        let bestMove = null;
+                        let bestScore = -Infinity;
+
+                        for (const [key, cost] of Object.entries(moves)) {
+                            if (cost > unit.curAp) continue;
+                            const [mx, my] = key.split(',').map(Number);
+                            const newDist = Math.abs(mx - closestFriend.x) + Math.abs(my - closestFriend.y);
+                            if (newDist < closestDist) {
+                                const posKey = `${mx},${my}`;
+                                const posInRiver = this.riverCells.has(posKey) && !this.bridgeCells.has(posKey);
+                                // 避免移动后回合结束且停留在河中
+                                if (posInRiver && (unit.curAp - cost <= 0)) continue;
+                                // 评分：距离减少越多越好，河流扣分
+                                const score = (closestDist - newDist) * 10 - (posInRiver ? 50 : 0);
+                                if (score > bestScore) {
+                                    bestScore = score;
+                                    bestMove = { x: mx, y: my, cost };
+                                }
+                            }
+                        }
+
+                        if (bestMove) {
+                            unit.x = bestMove.x;
+                            unit.y = bestMove.y;
+                            unit.curAp -= bestMove.cost;
+                            // 调整朝向友军方向
+                            const dxFriend = closestFriend.x - unit.x;
+                            const dyFriend = closestFriend.y - unit.y;
+                            if (Math.abs(dxFriend) >= Math.abs(dyFriend)) {
+                                unit.facing = dxFriend > 0 ? 'right' : 'left';
+                            } else {
+                                unit.facing = dyFriend > 0 ? 'down' : 'up';
+                            }
+                            this.log(`[敌方] ${unit.name} 向友军靠拢`, 'system');
+                            this.render();
+                            this.updateUI();
+
+                            // 移动后仍有AP则继续决策，否则结束回合
+                            if (unit.curAp > 0 && !unit.acted) {
+                                setTimeout(() => this.aiStep(), 350);
+                                return;
+                            } else {
+                                this.aiBusy = false;
+                                this.endUnitTurn(unit);
+                                return;
+                            }
+                        }
+                    }
+
+                    // 无法靠近友军，原地休整（直接结束回合）
+                    this.log(`[敌方] ${unit.name} 原地休整`, 'system');
+                    this.aiBusy = false;
+                    this.endUnitTurn(unit);
+                    return;
+                }
+
+                // ==================== 原有进攻移动逻辑（保留） ====================
+                if (unit.curAp >= 1) {
+                    const moves = this.getMoveCells(unit);
+                    let bestPos = null, bestScore = -Infinity;
+                    // ... 后续原有代码保持不变 ...
+                }
                 if (unit.curAp >= 1) {
                     const originalFacing = unit.facing;
                     for (const tryDir of ['up', 'down', 'left', 'right']) {
@@ -972,12 +1365,14 @@
                             this.log(`[敌方] ${unit.name} 转向${tryDir}`);
                             if (!unit.hasUsedNormalAttack && unit.curAp >= 3) {
                                 this.performAttackAi(unit, target, false);
-                                this.render(); this.updateUI();
+                                this.render();
+                                this.updateUI();
                                 setTimeout(() => this.aiStep(), 500);
                                 return;
                             } else if (!unit.hasUsedAlloutAttack && unit.curAp >= 5) {
                                 this.performAttackAi(unit, target, true);
-                                this.render(); this.updateUI();
+                                this.render();
+                                this.updateUI();
                                 setTimeout(() => this.aiStep(), 500);
                                 return;
                             } else {
@@ -989,66 +1384,56 @@
                     }
                     unit.facing = originalFacing;
                 }
-
-                // 移动逻辑（带河流安全策略）
                 if (unit.curAp >= 1) {
                     const moves = this.getMoveCells(unit);
-                    let bestPos = null, bestScore = -Infinity;
-                    
+                    let bestPos = null,
+                        bestScore = -Infinity;
                     for (const [key, cost] of Object.entries(moves)) {
                         const [mx, my] = key.split(',').map(Number);
                         const posKey = `${mx},${my}`;
                         const posInRiver = this.riverCells.has(posKey) && !this.bridgeCells.has(posKey);
                         const posSide = getSide(my);
-                        
-                        // 评分系统
                         let score = 0;
                         const dist = Math.abs(target.x - mx) + Math.abs(target.y - my);
-                        score -= dist * 10; // 距离越近越好
-                        
-                        // 河流安全惩罚
-                        if (posInRiver) score -= 500; // 强烈避免停留在河中
-                        
-                        // 如果目标在异侧，优先靠近桥
+                        score -= dist * 10;
+                        if (posInRiver) score -= 500;
                         if (sameSideTargets.length === 0 && posSide !== -1) {
-                            // 找最近的桥
                             let nearestBridgeDist = Infinity;
                             for (const bKey of this.bridgeCells) {
                                 const [bx, by] = bKey.split(',').map(Number);
                                 const bd = Math.abs(mx - bx) + Math.abs(my - by);
                                 if (bd < nearestBridgeDist) nearestBridgeDist = bd;
                             }
-                            score -= nearestBridgeDist * 4; // 靠近桥加分
+                            score -= nearestBridgeDist * 4;
                         }
-                        
-                        // 回合结束安全检查：如果移动后AP=0，必须不在河里
                         const remainingAp = unit.curAp - cost;
                         if (remainingAp <= 0 && posInRiver) score -= 1000;
-                        
                         if (score > bestScore) {
                             bestScore = score;
                             bestPos = [mx, my, cost];
                         }
                     }
-
                     if (bestPos) {
                         const [mx, my, cost] = bestPos;
-                        const dx = mx - unit.x, dy = my - unit.y;
+                        const dx = mx - unit.x,
+                            dy = my - unit.y;
                         const stepX = dx === 0 ? 0 : (dx > 0 ? 1 : -1);
                         const stepY = dy === 0 ? 0 : (dy > 0 ? 1 : -1);
                         let moved = false;
-
-                        const tryMoves = [[stepX, 0], [0, stepY], [stepX, stepY]];
+                        const tryMoves = [
+                            [stepX, 0],
+                            [0, stepY],
+                            [stepX, stepY]
+                        ];
                         for (const [sx, sy] of tryMoves) {
                             if (sx === 0 && sy === 0) continue;
-                            const nx = unit.x + sx, ny = unit.y + sy;
+                            const nx = unit.x + sx,
+                                ny = unit.y + sy;
                             const nKey = `${nx},${ny}`;
                             if (nKey in moves && moves[nKey] <= unit.curAp) {
-                                // 检查：如果这是最后一步且会停在河里，尝试其他路径
                                 const willBeInRiver = this.riverCells.has(nKey) && !this.bridgeCells.has(nKey);
                                 const willEndTurn = (unit.curAp - moves[nKey]) <= 0;
-                                if (willBeInRiver && willEndTurn) continue; // 跳过这个危险移动
-                                
+                                if (willBeInRiver && willEndTurn) continue;
                                 unit.x = nx;
                                 unit.y = ny;
                                 unit.curAp -= moves[nKey];
@@ -1061,9 +1446,7 @@
                                 break;
                             }
                         }
-
                         if (!moved) {
-                            // 如果所有直接路径都危险，尝试找安全位置
                             for (const [key, cost] of Object.entries(moves)) {
                                 const [sx, sy] = key.split(',').map(Number);
                                 const sKey = `${sx},${sy}`;
@@ -1078,16 +1461,13 @@
                                 }
                             }
                         }
-
                         if (!moved) {
                             this.aiBusy = false;
                             this.endUnitTurn(unit);
                             return;
                         }
-                        
                         this.render();
                         this.updateUI();
-                        
                         if (unit.curAp > 0 && !unit.acted) {
                             setTimeout(() => this.aiStep(), 350);
                         } else {
@@ -1097,10 +1477,10 @@
                         return;
                     }
                 }
-                
                 this.aiBusy = false;
                 this.endUnitTurn(unit);
             }
+
             toggleAttackMode() {
                 if (!this.selectedUnit || this.aiBusy || this.gameOver) return;
                 if (this.currentUnit?.faction !== 'player') return;
@@ -1125,7 +1505,6 @@
                 if (!this.selectedUnit || this.aiBusy || this.gameOver || this.selectedUnit.curAp < 1) return;
                 if (this.currentUnit?.faction !== 'player') return;
                 if (this.selectedUnit !== this.currentUnit) return;
-
                 this.selectedUnit.facing = direction;
                 this.selectedUnit.curAp -= 1;
                 const dirNames = { up: '上', down: '下', left: '左', right: '右' };
@@ -1138,18 +1517,14 @@
                 if (this.aiBusy || this.gameOver) return;
                 if (this.currentUnit && this.currentUnit.faction !== 'player') return;
                 const rect = this.canvas.getBoundingClientRect();
-                const mx = e.clientX - rect.left,
-                    my = e.clientY - rect.top;
-                
-                // ★ 减去绘制时的偏移量 ★
-                const offsetX = 15, offsetY = 15;
-                const gx = Math.floor((mx - offsetX) / CELL_SIZE),
-                    gy = Math.floor((my - offsetY) / CELL_SIZE);
-                
+                const scaleX = this.canvasWidth / rect.width;
+                const scaleY = this.canvasHeight / rect.height;
+                const mx = (e.clientX - rect.left) * scaleX;
+                const my = (e.clientY - rect.top) * scaleY;
+                const gx = Math.floor((mx - this.offsetX) / this.cellSize);
+                const gy = Math.floor((my - this.offsetY) / this.cellSize);
                 if (gx < 0 || gx >= BOARD_W || gy < 0 || gy >= BOARD_H) return;
-
                 const unit = getUnitAt(this.units, gx, gy);
-
                 if (this.pendingMode && this.selectedUnit && this.selectedUnit === this.currentUnit) {
                     if (unit && unit.faction !== this.selectedUnit.faction && !unit.dead) {
                         this.performAttack(unit, this.pendingMode === 'allout');
@@ -1161,7 +1536,6 @@
                         return;
                     }
                 }
-
                 if (unit && unit.faction === 'player' && !unit.dead) {
                     if (unit === this.currentUnit) {
                         this.selectedUnit = unit;
@@ -1174,7 +1548,6 @@
                         return;
                     }
                 }
-
                 if (this.selectedUnit && !unit && this.selectedUnit === this.currentUnit) {
                     this.moveUnitTo(gx, gy);
                     this.render();
@@ -1185,7 +1558,7 @@
             updateUI() {
                 const turnInfo = document.getElementById('turnInfo');
                 if (this.gameOver) {
-                    turnInfo.textContent = '游戏结束';
+                    turnInfo.textContent = '🏁 游戏结束';
                     turnInfo.className = 'game-over';
                 } else if (this.currentUnit && this.currentUnit.faction === 'player') {
                     turnInfo.textContent = `🛡️ 玩家行动 (第${this.turnCount}回合)`;
@@ -1194,106 +1567,106 @@
                     turnInfo.textContent = `⚔️ 敌方行动 (第${this.turnCount}回合)`;
                     turnInfo.className = 'enemy-turn';
                 }
-
                 const unitInfo = document.getElementById('unitInfo');
                 if (this.selectedUnit && !this.selectedUnit.dead && this.selectedUnit.faction === 'player') {
                     const u = this.selectedUnit;
                     unitInfo.innerHTML = `
                         <div class="info-line"><span class="label">位置:</span> (${u.x},${u.y}) 朝向${u.facing}</div>
-                        <div class="info-line"><span class="label">体力:</span> ${u.hp}/${u.maxHp}</div>
-                        <div class="info-line"><span class="label">行动点:</span> ${u.curAp}/${u.apMax}</div>
-                        <div class="info-line"><span class="label">攻击力:</span> ${u.attackPower()}${!u.hasEngaged  ? ' (首次-2)' : ''}</div>
+                        <div class="info-line"><span class="label">体力:</span> <span class="highlight">${u.hp}/${u.maxHp}</span></div>
+                        <div class="info-line"><span class="label">行动点:</span> <span class="highlight">${u.curAp}/${u.apMax}</span></div>
+                        <div class="info-line"><span class="label">攻击力:</span> ${u.attackPower()}${!u.hasEngaged ? ' (首次-2)' : ''}</div>
                         <div class="info-line"><span class="label">防御力:</span> ${u.defense(this.units)} (基础${u.defBase}+站位)</div>
-                        <div class="info-line"><span class="label">普通攻击:</span> ${u.hasUsedNormalAttack ? '已用' : '可用'}</div>
-                        <div class="info-line"><span class="label">奋力再击:</span> ${u.curAp>=5 ? '可用' : '不可用'}</div>
-                        <div class="info-line" style="color:#ffd700;margin-top:8px;">${CLASS_TEMPLATES[u.cls].desc}</div>
+                        <div class="info-line"><span class="label">普通攻击:</span> ${u.hasUsedNormalAttack ? '已用' : '<span style="color:#5dbe7e;">可用</span>'}</div>
+                        <div class="info-line"><span class="label">奋力再击:</span> ${u.curAp>=5 ? '<span style="color:#ffaa30;">可用</span>' : '不可用'}</div>
+                        <div class="info-line" style="color:#ffd700;margin-top:6px;">${CLASS_TEMPLATES[u.cls].desc}</div>
                     `;
                 } else {
                     unitInfo.innerHTML =
-                        `<div style="color:#aaa;text-align:center;padding:20px;">${this.aiBusy ? '敌方思考中...' : (this.gameOver ? '战斗结束' : '等待行动')}</div>`;
+                        `<div style="color:#aaa;text-align:center;padding:15px;">${this.aiBusy ? '敌方思考中...' : (this.gameOver ? '战斗结束' : '等待行动')}</div>`;
                 }
-
                 const btnAttack = document.getElementById('btnAttack');
                 const btnAllout = document.getElementById('btnAllout');
                 const btnEnd = document.getElementById('btnEnd');
-                const canAct = this.selectedUnit && !this.aiBusy && !this.gameOver && this.selectedUnit === this.currentUnit;
-
-                btnAttack.disabled = !canAct || this.selectedUnit?.hasUsedNormalAttack || this.selectedUnit?.curAp < 3;
+                const canAct = this.selectedUnit && !this.aiBusy && !this.gameOver && this.selectedUnit === this
+                    .currentUnit;
+                btnAttack.disabled = !canAct || this.selectedUnit?.hasUsedNormalAttack || this.selectedUnit?.curAp <
+                    3;
                 btnAttack.classList.toggle('active', this.pendingMode === 'attack');
                 btnAttack.textContent = this.pendingMode === 'attack' ? '【攻击中】' : '普通攻击';
-
-                btnAllout.disabled = !canAct || this.selectedUnit?.hasUsedAlloutAttack || this.selectedUnit?.curAp < 5;
+                btnAllout.disabled = !canAct || this.selectedUnit?.hasUsedAlloutAttack || this.selectedUnit?.curAp <
+                    5;
                 btnAllout.classList.toggle('active', this.pendingMode === 'allout');
                 btnAllout.textContent = this.pendingMode === 'allout' ? '【奋力中】' : '奋力再击';
-
                 btnEnd.disabled = !this.selectedUnit || this.aiBusy;
             }
 
-            // ==================== 绘制山峰 ====================
+            // ==================== 绘制山峰（中国风假山） ====================
             drawMountain(ctx, rectX, rectY) {
-                const size = CELL_SIZE;
+                const size = this.cellSize;
                 const cx = rectX + size / 2;
-                
-                // 山体阴影底
-                ctx.fillStyle = '#2d3436';
+                ctx.fillStyle = '#2a2820';
                 ctx.fillRect(rectX, rectY, size, size);
-                
-                // 主山体（深灰）
-                ctx.fillStyle = '#636e72';
+                ctx.fillStyle = '#5a5040';
                 ctx.beginPath();
-                ctx.moveTo(cx, rectY + 6);
-                ctx.lineTo(rectX + size - 4, rectY + size - 6);
-                ctx.lineTo(rectX + 4, rectY + size - 6);
+                ctx.moveTo(cx, rectY + size * 0.1);
+                ctx.lineTo(rectX + size - size * 0.1, rectY + size - size * 0.12);
+                ctx.lineTo(rectX + size * 0.1, rectY + size - size * 0.12);
                 ctx.closePath();
                 ctx.fill();
-                
-                // 山体高光面（浅灰）
-                ctx.fillStyle = '#7f8c8d';
+                ctx.fillStyle = '#6b5d48';
                 ctx.beginPath();
-                ctx.moveTo(cx, rectY + 6);
-                ctx.lineTo(cx + 2, rectY + 6);
-                ctx.lineTo(rectX + size - 8, rectY + size - 6);
-                ctx.lineTo(rectX + 4, rectY + size - 6);
+                ctx.moveTo(cx, rectY + size * 0.1);
+                ctx.lineTo(cx + size * 0.06, rectY + size * 0.12);
+                ctx.lineTo(rectX + size - size * 0.16, rectY + size - size * 0.12);
+                ctx.lineTo(rectX + size * 0.1, rectY + size - size * 0.12);
                 ctx.closePath();
                 ctx.fill();
-                
-                // 山顶积雪
-                ctx.fillStyle = '#dfe6e9';
+                ctx.fillStyle = '#8a7a60';
                 ctx.beginPath();
-                ctx.moveTo(cx, rectY + 6);
-                ctx.lineTo(cx + 9, rectY + 18);
-                ctx.lineTo(cx - 9, rectY + 18);
+                ctx.moveTo(cx, rectY + size * 0.1);
+                ctx.lineTo(cx + size * 0.2, rectY + size * 0.35);
+                ctx.lineTo(cx - size * 0.2, rectY + size * 0.35);
                 ctx.closePath();
                 ctx.fill();
-                
-                // 山脊线
-                ctx.strokeStyle = '#2d3436';
+                ctx.strokeStyle = '#3a3028';
                 ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.moveTo(cx, rectY + 6);
-                ctx.lineTo(cx, rectY + 18);
+                ctx.moveTo(cx, rectY + size * 0.1);
+                ctx.lineTo(cx, rectY + size * 0.35);
                 ctx.stroke();
-                
-                // 边框
-                ctx.strokeStyle = '#505050';
-                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = '#4a3a28';
+                ctx.lineWidth = 2;
                 ctx.strokeRect(rectX, rectY, size, size);
             }
 
             render() {
                 const ctx = this.ctx;
-                ctx.fillStyle = COLORS.BG;
-                ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                const cs = this.cellSize;
+                const ox = this.offsetX;
+                const oy = this.offsetY;
 
-                ctx.fillStyle = COLORS.BOARD_BG;
-                ctx.fillRect(8, 8, this.canvas.width - 16, this.canvas.height - 16);
+                ctx.fillStyle = '#1a1610';
+                ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
 
-                ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+                // 棋盘背景
+                ctx.fillStyle = '#c8b878';
+                ctx.fillRect(ox - 4, oy - 4, BOARD_W * cs + 8, BOARD_H * cs + 8);
+                ctx.fillStyle = '#d4c488';
+                ctx.fillRect(ox, oy, BOARD_W * cs, BOARD_H * cs);
+
+                // 棋盘格线
+                ctx.strokeStyle = 'rgba(80,50,20,0.25)';
                 ctx.lineWidth = 1;
-                for (let i = 1; i < BOARD_H; i++) {
+                for (let i = 0; i <= BOARD_W; i++) {
                     ctx.beginPath();
-                    ctx.moveTo(10, i * CELL_SIZE + 8);
-                    ctx.lineTo(this.canvas.width - 10, i * CELL_SIZE + 8);
+                    ctx.moveTo(ox + i * cs, oy);
+                    ctx.lineTo(ox + i * cs, oy + BOARD_H * cs);
+                    ctx.stroke();
+                }
+                for (let i = 0; i <= BOARD_H; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(ox, oy + i * cs);
+                    ctx.lineTo(ox + BOARD_W * cs, oy + i * cs);
                     ctx.stroke();
                 }
 
@@ -1308,208 +1681,294 @@
 
                 for (let y = 0; y < BOARD_H; y++) {
                     for (let x = 0; x < BOARD_W; x++) {
-
-                        const offsetX = 15, offsetY = 15;
-                        const rectX = offsetX + x * CELL_SIZE;
-                        const rectY = offsetY + y * CELL_SIZE;
+                        const rectX = ox + x * cs;
+                        const rectY = oy + y * cs;
                         const key = `${x},${y}`;
 
-                        // ★ 障碍物绘制为山峰 ★
                         if (this.obstacles.has(key)) {
                             this.drawMountain(ctx, rectX, rectY);
                             continue;
                         }
 
-                        // 基础地形色（草地/沙地/河流/桥）
-                        let color = this.terrainColors[key] || COLORS.CELL;
+                        let color = this.terrainColors[key] || '#c8b878';
                         ctx.fillStyle = color;
-                        ctx.fillRect(rectX, rectY, CELL_SIZE, CELL_SIZE);
-                        // 移动范围覆盖
+                        ctx.fillRect(rectX, rectY, cs, cs);
+
                         if (key in moveCells && !this.pendingMode) {
-                        // 半透明蓝色覆盖
-                        ctx.fillStyle = 'rgba(100, 100, 255, 0.8)';
-                        ctx.fillRect(rectX, rectY, CELL_SIZE, CELL_SIZE);
+                            ctx.fillStyle = 'rgba(80,140,220,0.55)';
+                            ctx.fillRect(rectX, rectY, cs, cs);
                         }
-                        // 攻击范围覆盖
                         if (atkCells.some(c => c[0] === x && c[1] === y)) {
-                            // 半透明白色覆盖
-                            ctx.fillStyle = 'rgba(255, 100, 100, 0.8)';
-                            ctx.fillRect(rectX, rectY, CELL_SIZE, CELL_SIZE);
+                            ctx.fillStyle = 'rgba(220,80,60,0.55)';
+                            ctx.fillRect(rectX, rectY, cs, cs);
                         }
 
-                        
-
-                        // 河流波纹效果
+                        // 河流波纹
                         if (this.riverCells.has(key) && !this.bridgeCells.has(key)) {
-                            ctx.strokeStyle = 'rgba(0, 100, 255, 0.3)';
-                            ctx.lineWidth = 3;
-                            const waveY = rectY + CELL_SIZE / 2 + Math.sin(x * 0.8 + y * 0.5) * 3;
+                            ctx.strokeStyle = 'rgba(30,120,180,0.35)';
+                            ctx.lineWidth = Math.max(2, cs * 0.06);
+                            const waveBase = rectY + cs / 2;
                             for (let i = 0; i < 2; i++) {
                                 ctx.beginPath();
-                                ctx.moveTo(rectX + 4, waveY+10*i);
-                                ctx.lineTo(rectX + CELL_SIZE - 4, waveY+10*i);
-                                // ctx.lineTo(rectX + CELL_SIZE - 2, waveY);
+                                const wy = waveBase + (i - 0.5) * cs * 0.3;
+                                for (let px = rectX + 3; px < rectX + cs - 3; px += 2) {
+                                    const wyOff = wy + Math.sin((px - rectX) * 0.15 + y * 1.2) * cs * 0.08;
+                                    if (px === rectX + 3) ctx.moveTo(px, wyOff);
+                                    else ctx.lineTo(px, wyOff);
+                                }
                                 ctx.stroke();
+                            }
+                            // 楚河汉界文字
+                            if ((y === 4 || y === 5) && x >= 2 && x <= 5 && cs >= 38) {
+                                ctx.fillStyle = 'rgba(200,180,140,0.5)';
+                                ctx.font = `bold ${Math.floor(cs*0.22)}px "KaiTi","STSong","SimSun",serif`;
+                                ctx.textAlign = 'center';
+                                const riverText = y === 4 ? '楚  河' : '汉  界';
+                                ctx.fillText(riverText, rectX + cs / 2, rectY + cs / 2 + cs * 0.07);
+                                ctx.textAlign = 'left';
                             }
                         }
 
                         // 桥梁纹理
                         if (this.bridgeCells.has(key)) {
-                            ctx.strokeStyle = 'rgba(60, 40, 20, 0.4)';
-                            ctx.lineWidth = 4;
-                            for (let i = 0; i < 6; i++) {
+                            ctx.strokeStyle = 'rgba(100,65,30,0.5)';
+                            ctx.lineWidth = Math.max(3, cs * 0.08);
+                            const plankCount = Math.max(4, Math.floor(cs / 9));
+                            for (let i = 0; i < plankCount; i++) {
                                 ctx.beginPath();
-                                ctx.moveTo(rectX + 4, rectY + + i * 10);
-                                ctx.lineTo(rectX +CELL_SIZE-4, rectY + i * 10);
+                                const py = rectY + 3 + i * (cs - 6) / plankCount;
+                                ctx.moveTo(rectX + 3, py);
+                                ctx.lineTo(rectX + cs - 3, py);
                                 ctx.stroke();
                             }
                         }
 
+                        // 当前行动单位高亮边框
                         if (this.currentUnit && this.currentUnit.x === x && this.currentUnit.y === y) {
-                            ctx.strokeStyle = COLORS.CURRENT_TURN;
-                            ctx.lineWidth = 4;
-                            ctx.strokeRect(rectX + 2, rectY + 2, CELL_SIZE - 4, CELL_SIZE - 4);
-                        }
-
-                        if (this.selectedUnit && this.selectedUnit.x === x && this.selectedUnit.y === y) {
                             ctx.strokeStyle = '#ffd700';
-                            ctx.lineWidth = 3;
-                            ctx.strokeRect(rectX + 3, rectY + 3, CELL_SIZE - 6, CELL_SIZE - 6);
+                            ctx.lineWidth = Math.max(3, cs * 0.07);
+                            ctx.strokeRect(rectX + 2, rectY + 2, cs - 4, cs - 4);
+                            ctx.strokeStyle = 'rgba(255,215,0,0.4)';
+                            ctx.lineWidth = Math.max(5, cs * 0.11);
+                            ctx.strokeRect(rectX + 1, rectY + 1, cs - 2, cs - 2);
                         }
 
-                        ctx.strokeStyle = COLORS.CELL_BORDER;
-                        ctx.lineWidth = 1;
-                        ctx.strokeRect(rectX, rectY, CELL_SIZE, CELL_SIZE);
+                        // 选中单位高亮
+                        if (this.selectedUnit && this.selectedUnit.x === x && this.selectedUnit.y === y &&
+                            this.selectedUnit !== this.currentUnit) {
+                            ctx.strokeStyle = '#ffeebb';
+                            ctx.lineWidth = Math.max(2, cs * 0.05);
+                            ctx.setLineDash([cs * 0.12, cs * 0.08]);
+                            ctx.strokeRect(rectX + 3, rectY + 3, cs - 6, cs - 6);
+                            ctx.setLineDash([]);
+                        }
 
-                        // ★ 移动提示显示剩余AP ★
+                        // 格子边框
+                        ctx.strokeStyle = 'rgba(60,35,15,0.3)';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(rectX, rectY, cs, cs);
+
+                        // 移动消耗提示
                         if (key in moveCells && key !== `${this.selectedUnit?.x},${this.selectedUnit?.y}`) {
                             const cost = moveCells[key];
                             const remainingAp = this.selectedUnit.curAp - cost;
                             ctx.fillStyle = '#ffee88';
-                            ctx.font = 'bold 11px Microsoft YaHei';
+                            ctx.font = `bold ${Math.floor(cs*0.2)}px "Microsoft YaHei","SimHei",sans-serif`;
                             ctx.textAlign = 'right';
-                            ctx.fillText(`${remainingAp}`, rectX + CELL_SIZE - 4, rectY + CELL_SIZE - 4);
+                            ctx.fillText(`${remainingAp}`, rectX + cs - 3, rectY + cs - 3);
                             ctx.textAlign = 'left';
                         }
 
                         const unit = getUnitAt(this.units, x, y);
                         if (unit) {
-                            this.drawUnit(ctx, unit, rectX + CELL_SIZE/2, rectY + CELL_SIZE/2);
+                            this.drawChessPiece(ctx, unit, rectX + cs / 2, rectY + cs / 2);
                             this.drawUnitStats(ctx, unit, rectX, rectY);
                         }
                     }
                 }
-
                 this.drawAnimations();
             }
 
-            drawUnit(ctx, unit, cx, cy) {
+            // ==================== 象棋风格棋子绘制 ====================
+            drawChessPiece(ctx, unit, cx, cy) {
+                const cs = this.cellSize;
                 let x = cx;
                 let y = cy;
                 let alpha = unit.dead ? Math.max(0, 1 - (Date.now() - unit.deathTime) / 900) : 1.0;
-
                 if (alpha <= 0) return;
 
                 if (unit.shakeTime > 0) {
-                    const shake = Math.sin(unit.shakeTime * 55) * 4;
+                    const shake = Math.sin(unit.shakeTime * 55) * (cs * 0.08);
                     x += shake;
                     unit.shakeTime -= 0.018;
                 }
 
                 ctx.globalAlpha = alpha;
+                const radius = cs * 0.38;
+                const isPlayer = unit.faction === 'player';
 
-                const radius = 19;
-                let color;
-                if (unit.dead) {
-                    color = unit.faction === 'player' ? '#2a2a3a' : '#3a2a2a';
-                } else if (unit.acted) {
-                    color = unit.faction === 'player' ? COLORS.PLAYER_ACTED : COLORS.ENEMY_ACTED;
-                } else {
-                    color = unit.faction === 'player' ? COLORS.PLAYER : COLORS.ENEMY;
-                }
-
+                // 底座阴影
+                ctx.save();
                 ctx.shadowColor = 'rgba(0,0,0,0.7)';
-                ctx.shadowBlur = 10;
-                ctx.shadowOffsetX = 3;
-                ctx.shadowOffsetY = 6;
+                ctx.shadowBlur = cs * 0.2;
+                ctx.shadowOffsetX = cs * 0.05;
+                ctx.shadowOffsetY = cs * 0.1;
 
+                // 棋子主体
+                const grad = ctx.createRadialGradient(x - radius * 0.25, y - radius * 0.3, radius * 0.1, x, y, radius);
+                if (isPlayer) {
+                    grad.addColorStop(0, '#e8c8a0');
+                    grad.addColorStop(0.35, '#c43a3a');
+                    grad.addColorStop(0.55, '#8b1a1a');
+                    grad.addColorStop(0.8, '#5a1010');
+                    grad.addColorStop(1, '#3a0808');
+                } else {
+                    grad.addColorStop(0, '#c8c8c8');
+                    grad.addColorStop(0.35, '#5a5a5a');
+                    grad.addColorStop(0.55, '#2a2a2a');
+                    grad.addColorStop(0.8, '#1a1a1a');
+                    grad.addColorStop(1, '#0a0a0a');
+                }
                 ctx.beginPath();
                 ctx.arc(x, y, radius, 0, Math.PI * 2);
-                ctx.fillStyle = color;
+                ctx.fillStyle = grad;
                 ctx.fill();
 
+                ctx.shadowColor = 'transparent';
                 ctx.shadowBlur = 0;
                 ctx.shadowOffsetX = 0;
                 ctx.shadowOffsetY = 0;
+                ctx.restore();
 
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 2.8;
+                // 外圈边框
+                ctx.strokeStyle = isPlayer ? '#d4a040' : '#888888';
+                ctx.lineWidth = Math.max(2.5, cs * 0.055);
                 ctx.stroke();
 
-                ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 15px Microsoft YaHei';
-                ctx.textAlign = 'center';
-                const arrows = { up: '↑', down: '↓', left: '←', right: '→' };
-                ctx.fillText(arrows[unit.facing] || '●', x, y - 7);
+                // 内圈装饰环
+                ctx.strokeStyle = isPlayer ? 'rgba(255,220,150,0.7)' : 'rgba(200,200,200,0.6)';
+                ctx.lineWidth = Math.max(1, cs * 0.022);
+                ctx.beginPath();
+                ctx.arc(x, y, radius * 0.78, 0, Math.PI * 2);
+                ctx.stroke();
 
-                ctx.font = '10px Microsoft YaHei';
-                ctx.fillText(unit.name, x, y + 8);
-                
+                // 高光
+                const highlightGrad = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.4, radius * 0.05, x, y,
+                    radius);
+                highlightGrad.addColorStop(0, 'rgba(255,255,255,0.35)');
+                highlightGrad.addColorStop(0.4, 'rgba(255,255,255,0.08)');
+                highlightGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = highlightGrad;
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 朝向指示箭头
+                const arrowLen = radius * 0.65;
+                let arrowX = x,
+                    arrowY = y;
+                const arrowsMap = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+                const [adx, ady] = arrowsMap[unit.facing] || [0, -1];
+                const arrowTipX = x + adx * (radius + arrowLen * 0.5);
+                const arrowTipY = y + ady * (radius + arrowLen * 0.5);
+                const perpX = -ady;
+                const perpY = adx;
+                const arrowBaseX = x + adx * radius * 0.55;
+                const arrowBaseY = y + ady * radius * 0.55;
+                const wingSpan = arrowLen * 0.35;
+
+                ctx.fillStyle = isPlayer ? '#ffd700' : '#e0e0e0';
+                ctx.strokeStyle = isPlayer ? '#b8960c' : '#999';
+                ctx.lineWidth = Math.max(1, cs * 0.02);
+                ctx.beginPath();
+                ctx.moveTo(arrowTipX, arrowTipY);
+                ctx.lineTo(arrowBaseX + perpX * wingSpan, arrowBaseY + perpY * wingSpan);
+                ctx.lineTo(arrowBaseX - perpX * wingSpan, arrowBaseY - perpY * wingSpan);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // 中心文字
+                const fontSize = Math.floor(cs * 0.34);
+                ctx.fillStyle = isPlayer ? '#fff8e8' : '#e8e8e8';
+                ctx.font = `bold ${fontSize}px "KaiTi","STSong","SimSun","Noto Serif SC",serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = 'rgba(0,0,0,0.6)';
+                ctx.shadowBlur = 2;
+                ctx.fillText(unit.shortName, x, y - radius * 0.08);
+                ctx.shadowBlur = 0;
+
+                // 已行动标记
+                if (unit.acted && !unit.dead) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
                 ctx.globalAlpha = 1.0;
                 ctx.textAlign = 'left';
+                ctx.textBaseline = 'alphabetic';
             }
-            
+
             drawUnitStats(ctx, unit, rectX, rectY) {
                 if (unit.dead) return;
+                const cs = this.cellSize;
                 const atk = unit.attackPower();
                 const def = unit.defense(this.units);
                 const hp = unit.hp;
                 const ap = unit.curAp;
+                const fontSize = Math.max(9, Math.floor(cs * 0.2));
 
-                ctx.font = 'bold 14px Microsoft YaHei';
+                ctx.font = `bold ${fontSize}px "Microsoft YaHei","SimHei",sans-serif`;
                 ctx.textBaseline = 'middle';
 
-                // ★ 左上角 - AP（蓝色）★
-                ctx.fillStyle = '#3388ff';
+                // 左上 - AP（蓝色）
+                ctx.fillStyle = '#4499ff';
                 ctx.textAlign = 'left';
-                ctx.fillText(ap, rectX + 4, rectY + 12);
+                ctx.fillText(ap, rectX + Math.max(2, cs * 0.06), rectY + Math.max(8, cs * 0.18));
 
-                // ★ 右上角 - 攻击力（红色）★
-                ctx.fillStyle = '#ff3333';
+                // 右上 - 攻击力（红色）
+                ctx.fillStyle = '#ff4444';
                 ctx.textAlign = 'right';
-                ctx.fillText(atk, rectX + CELL_SIZE - 4, rectY + 12);
+                ctx.fillText(atk, rectX + cs - Math.max(2, cs * 0.06), rectY + Math.max(8, cs * 0.18));
 
-                // 左下角 - HP（绿色）
-                ctx.fillStyle = '#00ff66';
+                // 左下 - HP（绿色）
+                ctx.fillStyle = '#00dd55';
                 ctx.textAlign = 'left';
-                ctx.fillText(hp, rectX + 4, rectY + CELL_SIZE - 6);
+                ctx.fillText(hp, rectX + Math.max(2, cs * 0.06), rectY + cs - Math.max(4, cs * 0.1));
 
-                // 右下角 - 防御力（黄色）
-                ctx.fillStyle = '#ffdd00';
+                // 右下 - 防御力（金色）
+                ctx.fillStyle = '#eec830';
                 ctx.textAlign = 'right';
-                ctx.fillText(def, rectX + CELL_SIZE - 4, rectY + CELL_SIZE - 6);
+                ctx.fillText(def, rectX + cs - Math.max(2, cs * 0.06), rectY + cs - Math.max(4, cs * 0.1));
+
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'alphabetic';
             }
 
             drawAnimations() {
                 const ctx = this.ctx;
                 ctx.save();
                 ctx.textAlign = 'center';
-                ctx.font = 'bold 18px Microsoft YaHei';
+                const fontSize = Math.max(14, Math.floor(this.cellSize * 0.32));
+                ctx.font = `bold ${fontSize}px "Microsoft YaHei","SimHei",sans-serif`;
 
                 for (const a of this.animations) {
                     const progress = Math.min(1, a.time / a.duration);
                     const alpha = Math.max(0, 1 - progress * 1.3);
 
                     if (a.type === 'damage') {
-                        const yOffset = -progress * 68;
-                        ctx.fillStyle = `rgba(255, 80, 80, ${alpha})`;
+                        const yOffset = -progress * (this.cellSize * 1.2);
+                        ctx.fillStyle = `rgba(255, 60, 40, ${alpha})`;
                         ctx.shadowColor = '#ff2222';
-                        ctx.shadowBlur = 15;
+                        ctx.shadowBlur = 12;
                         ctx.fillText(`-${a.value}`, a.screenX, a.screenY + yOffset);
                     } else if (a.type === 'attackEffect') {
-                        const size = 12 + progress * 42;
-                        ctx.strokeStyle = `rgba(255, 220, 100, ${1 - progress * 1.8})`;
-                        ctx.lineWidth = 5 - progress * 4;
+                        const size = (this.cellSize * 0.22) + progress * (this.cellSize * 0.75);
+                        ctx.strokeStyle = `rgba(255, 200, 60, ${1 - progress * 1.8})`;
+                        ctx.lineWidth = Math.max(3, 5 - progress * 4);
                         ctx.beginPath();
                         ctx.arc(a.screenX, a.screenY, size, 0, Math.PI * 2);
                         ctx.stroke();
@@ -1523,9 +1982,3 @@
     </script>
 </body>
 </html>
-<!-- '''
-
-with open('/mnt/agents/output/san-guo-zhi-demo-updated.html', 'w', encoding='utf-8') as f:
-    f.write(html_code)
-
-print("文件已保存到 /mnt/agents/output/san-guo-zhi-demo-updated.html") -->
