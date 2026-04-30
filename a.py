@@ -1,6 +1,5 @@
 
-<!-- html_code = ''' -->
-<!DOCTYPE html>
+html_code = '''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -829,11 +828,11 @@
                         if (this.obstacles.has(`${nx},${ny}`)) continue;
                         if (getUnitAt(this.units, nx, ny)) continue;
                         
-                        // ★ 河流消耗4AP，桥梁正常1AP ★
+                        // ★ 河流消耗5AP，桥梁正常1AP ★
                         const isRiver = this.riverCells.has(`${nx},${ny}`);
                         const isBridge = this.bridgeCells.has(`${nx},${ny}`);
                         let stepCost = 1;
-                        if (isRiver && !isBridge) stepCost = 4;
+                        if (isRiver && !isBridge) stepCost = 5;
                         
                         const key = `${nx},${ny}`;
                         const newCost = cost + stepCost;
@@ -876,7 +875,9 @@
                 this.aiStepCount++;
                 if (this.aiStepCount > 50) {
                     this.log(`[系统] ${this.currentUnit?.name || '敌方单位'} 行动超时，强制结束回合`, 'system');
-                    if (this.currentUnit) this.currentUnit.acted = true;
+                    if (this.currentUnit) {
+                        this.currentUnit.acted = true;
+                    }
                     this.aiBusy = false;
                     this.selectedUnit = null;
                     this.currentUnit = null;
@@ -886,7 +887,13 @@
                 }
 
                 const unit = this.currentUnit;
-                if (!unit || unit.dead || unit.acted) {
+                if (!unit || unit.dead) {
+                    this.aiBusy = false;
+                    this.advanceTurn();
+                    return;
+                }
+                
+                if (unit.acted) {
                     this.aiBusy = false;
                     this.advanceTurn();
                     return;
@@ -899,59 +906,26 @@
                     return;
                 }
 
-                // 判断是否在河中
-                const unitKey = `${unit.x},${unit.y}`;
-                const inRiver = this.riverCells.has(unitKey) && !this.bridgeCells.has(unitKey);
-
-                // 获取河流行
-                const riverRows = [];
-                for (let y = 0; y < BOARD_H; y++) {
-                    if (this.riverCells.has(`0,${y}`)) riverRows.push(y);
-                }
-                const minRiverY = Math.min(...riverRows);
-                const maxRiverY = Math.max(...riverRows);
-
-                // 判断单位所在侧：0=上方，1=下方，-1=在河里
-                const getSide = (y) => {
-                    if (y < minRiverY) return 0;
-                    if (y > maxRiverY) return 1;
-                    return -1;
-                };
-                const unitSide = getSide(unit.y);
-
-                // 分类目标
-                const sameSideTargets = targets.filter(t => getSide(t.y) === unitSide);
-                const otherSideTargets = targets.filter(t => getSide(t.y) !== unitSide && getSide(t.y) !== -1);
-
-                // 选择目标：优先同侧，否则选最近
-                let target;
-                if (sameSideTargets.length > 0) {
-                    target = sameSideTargets.reduce((best, t) => {
-                        const d1 = Math.abs(t.x - unit.x) + Math.abs(t.y - unit.y);
-                        const d2 = Math.abs(best.x - unit.x) + Math.abs(best.y - unit.y);
-                        return d1 < d2 ? t : best;
-                    });
-                } else {
-                    target = targets.reduce((best, t) => {
-                        const d1 = Math.abs(t.x - unit.x) + Math.abs(t.y - unit.y);
-                        const d2 = Math.abs(best.x - unit.x) + Math.abs(best.y - unit.y);
-                        return d1 < d2 ? t : best;
-                    });
-                }
+                const target = targets.reduce((best, t) => {
+                    const d1 = Math.abs(t.x - unit.x) + Math.abs(t.y - unit.y);
+                    const d2 = Math.abs(best.x - unit.x) + Math.abs(best.y - unit.y);
+                    return d1 < d2 ? t : best;
+                });
 
                 const atkCells = this.getBaseAttackCells(unit);
                 
-                // 检查是否能直接攻击
                 if (atkCells.some(c => c[0] === target.x && c[1] === target.y)) {
                     if (!unit.hasUsedNormalAttack && unit.curAp >= 3) {
                         this.performAttackAi(unit, target, false);
-                        this.render(); this.updateUI();
+                        this.render();
+                        this.updateUI();
                         setTimeout(() => this.aiStep(), 500);
                         return;
                     }
                     if (!unit.hasUsedAlloutAttack && unit.curAp >= 5) {
                         this.performAttackAi(unit, target, true);
-                        this.render(); this.updateUI();
+                        this.render();
+                        this.updateUI();
                         setTimeout(() => this.aiStep(), 500);
                         return;
                     }
@@ -960,9 +934,9 @@
                     return;
                 }
 
-                // 尝试转向攻击
                 if (unit.curAp >= 1) {
                     const originalFacing = unit.facing;
+                    
                     for (const tryDir of ['up', 'down', 'left', 'right']) {
                         if (tryDir === originalFacing) continue;
                         unit.facing = tryDir;
@@ -970,14 +944,17 @@
                         if (newAtk.some(c => c[0] === target.x && c[1] === target.y)) {
                             unit.curAp -= 1;
                             this.log(`[敌方] ${unit.name} 转向${tryDir}`);
+                            
                             if (!unit.hasUsedNormalAttack && unit.curAp >= 3) {
                                 this.performAttackAi(unit, target, false);
-                                this.render(); this.updateUI();
+                                this.render();
+                                this.updateUI();
                                 setTimeout(() => this.aiStep(), 500);
                                 return;
                             } else if (!unit.hasUsedAlloutAttack && unit.curAp >= 5) {
                                 this.performAttackAi(unit, target, true);
-                                this.render(); this.updateUI();
+                                this.render();
+                                this.updateUI();
                                 setTimeout(() => this.aiStep(), 500);
                                 return;
                             } else {
@@ -990,65 +967,40 @@
                     unit.facing = originalFacing;
                 }
 
-                // 移动逻辑（带河流安全策略）
                 if (unit.curAp >= 1) {
                     const moves = this.getMoveCells(unit);
-                    let bestPos = null, bestScore = -Infinity;
+                    let bestPos = null,
+                        bestDist = Infinity;
                     
                     for (const [key, cost] of Object.entries(moves)) {
                         const [mx, my] = key.split(',').map(Number);
-                        const posKey = `${mx},${my}`;
-                        const posInRiver = this.riverCells.has(posKey) && !this.bridgeCells.has(posKey);
-                        const posSide = getSide(my);
-                        
-                        // 评分系统
-                        let score = 0;
                         const dist = Math.abs(target.x - mx) + Math.abs(target.y - my);
-                        score -= dist * 10; // 距离越近越好
-                        
-                        // 河流安全惩罚
-                        if (posInRiver) score -= 500; // 强烈避免停留在河中
-                        
-                        // 如果目标在异侧，优先靠近桥
-                        if (sameSideTargets.length === 0 && posSide !== -1) {
-                            // 找最近的桥
-                            let nearestBridgeDist = Infinity;
-                            for (const bKey of this.bridgeCells) {
-                                const [bx, by] = bKey.split(',').map(Number);
-                                const bd = Math.abs(mx - bx) + Math.abs(my - by);
-                                if (bd < nearestBridgeDist) nearestBridgeDist = bd;
-                            }
-                            score -= nearestBridgeDist * 4; // 靠近桥加分
-                        }
-                        
-                        // 回合结束安全检查：如果移动后AP=0，必须不在河里
-                        const remainingAp = unit.curAp - cost;
-                        if (remainingAp <= 0 && posInRiver) score -= 1000;
-                        
-                        if (score > bestScore) {
-                            bestScore = score;
+                        if (dist < bestDist) {
+                            bestDist = dist;
                             bestPos = [mx, my, cost];
                         }
                     }
 
                     if (bestPos) {
                         const [mx, my, cost] = bestPos;
-                        const dx = mx - unit.x, dy = my - unit.y;
+                        const dx = mx - unit.x,
+                            dy = my - unit.y;
                         const stepX = dx === 0 ? 0 : (dx > 0 ? 1 : -1);
                         const stepY = dy === 0 ? 0 : (dy > 0 ? 1 : -1);
                         let moved = false;
 
-                        const tryMoves = [[stepX, 0], [0, stepY], [stepX, stepY]];
+                        const tryMoves = [
+                            [stepX, 0],
+                            [0, stepY],
+                            [stepX, stepY]
+                        ];
+                        
                         for (const [sx, sy] of tryMoves) {
                             if (sx === 0 && sy === 0) continue;
-                            const nx = unit.x + sx, ny = unit.y + sy;
+                            const nx = unit.x + sx,
+                                ny = unit.y + sy;
                             const nKey = `${nx},${ny}`;
                             if (nKey in moves && moves[nKey] <= unit.curAp) {
-                                // 检查：如果这是最后一步且会停在河里，尝试其他路径
-                                const willBeInRiver = this.riverCells.has(nKey) && !this.bridgeCells.has(nKey);
-                                const willEndTurn = (unit.curAp - moves[nKey]) <= 0;
-                                if (willBeInRiver && willEndTurn) continue; // 跳过这个危险移动
-                                
                                 unit.x = nx;
                                 unit.y = ny;
                                 unit.curAp -= moves[nKey];
@@ -1059,23 +1011,6 @@
                                 }
                                 moved = true;
                                 break;
-                            }
-                        }
-
-                        if (!moved) {
-                            // 如果所有直接路径都危险，尝试找安全位置
-                            for (const [key, cost] of Object.entries(moves)) {
-                                const [sx, sy] = key.split(',').map(Number);
-                                const sKey = `${sx},${sy}`;
-                                const safe = !this.riverCells.has(sKey) || this.bridgeCells.has(sKey);
-                                const canReach = moves[sKey] <= unit.curAp;
-                                if (safe && canReach && (sx !== unit.x || sy !== unit.y)) {
-                                    unit.x = sx;
-                                    unit.y = sy;
-                                    unit.curAp -= moves[sKey];
-                                    moved = true;
-                                    break;
-                                }
                             }
                         }
 
@@ -1101,6 +1036,7 @@
                 this.aiBusy = false;
                 this.endUnitTurn(unit);
             }
+
             toggleAttackMode() {
                 if (!this.selectedUnit || this.aiBusy || this.gameOver) return;
                 if (this.currentUnit?.faction !== 'player') return;
@@ -1140,12 +1076,8 @@
                 const rect = this.canvas.getBoundingClientRect();
                 const mx = e.clientX - rect.left,
                     my = e.clientY - rect.top;
-                
-                // ★ 减去绘制时的偏移量 ★
-                const offsetX = 15, offsetY = 15;
-                const gx = Math.floor((mx - offsetX) / CELL_SIZE),
-                    gy = Math.floor((my - offsetY) / CELL_SIZE);
-                
+                const gx = Math.floor(mx / CELL_SIZE),
+                    gy = Math.floor(my / CELL_SIZE);
                 if (gx < 0 || gx >= BOARD_W || gy < 0 || gy >= BOARD_H) return;
 
                 const unit = getUnitAt(this.units, gx, gy);
@@ -1322,45 +1254,34 @@
 
                         // 基础地形色（草地/沙地/河流/桥）
                         let color = this.terrainColors[key] || COLORS.CELL;
+                        
+                        // 移动范围覆盖
+                        if (key in moveCells && !this.pendingMode) color = '#1e5aa8';
+                        // 攻击范围覆盖
+                        if (atkCells.some(c => c[0] === x && c[1] === y)) color = '#9f2a2a';
+
                         ctx.fillStyle = color;
                         ctx.fillRect(rectX, rectY, CELL_SIZE, CELL_SIZE);
-                        // 移动范围覆盖
-                        if (key in moveCells && !this.pendingMode) {
-                        // 半透明蓝色覆盖
-                        ctx.fillStyle = 'rgba(100, 100, 255, 0.8)';
-                        ctx.fillRect(rectX, rectY, CELL_SIZE, CELL_SIZE);
-                        }
-                        // 攻击范围覆盖
-                        if (atkCells.some(c => c[0] === x && c[1] === y)) {
-                            // 半透明白色覆盖
-                            ctx.fillStyle = 'rgba(255, 100, 100, 0.8)';
-                            ctx.fillRect(rectX, rectY, CELL_SIZE, CELL_SIZE);
-                        }
-
-                        
 
                         // 河流波纹效果
                         if (this.riverCells.has(key) && !this.bridgeCells.has(key)) {
-                            ctx.strokeStyle = 'rgba(0, 100, 255, 0.3)';
-                            ctx.lineWidth = 3;
+                            ctx.strokeStyle = 'rgba(100, 180, 255, 0.3)';
+                            ctx.lineWidth = 1;
                             const waveY = rectY + CELL_SIZE / 2 + Math.sin(x * 0.8 + y * 0.5) * 3;
-                            for (let i = 0; i < 2; i++) {
-                                ctx.beginPath();
-                                ctx.moveTo(rectX + 4, waveY+10*i);
-                                ctx.lineTo(rectX + CELL_SIZE - 4, waveY+10*i);
-                                // ctx.lineTo(rectX + CELL_SIZE - 2, waveY);
-                                ctx.stroke();
-                            }
+                            ctx.beginPath();
+                            ctx.moveTo(rectX + 4, waveY);
+                            ctx.lineTo(rectX + CELL_SIZE - 4, waveY);
+                            ctx.stroke();
                         }
 
                         // 桥梁纹理
                         if (this.bridgeCells.has(key)) {
                             ctx.strokeStyle = 'rgba(60, 40, 20, 0.4)';
-                            ctx.lineWidth = 4;
-                            for (let i = 0; i < 6; i++) {
+                            ctx.lineWidth = 2;
+                            for (let i = 1; i < 4; i++) {
                                 ctx.beginPath();
-                                ctx.moveTo(rectX + 4, rectY + + i * 10);
-                                ctx.lineTo(rectX +CELL_SIZE-4, rectY + i * 10);
+                                ctx.moveTo(rectX + i * 12, rectY + 4);
+                                ctx.lineTo(rectX + i * 12, rectY + CELL_SIZE - 4);
                                 ctx.stroke();
                             }
                         }
@@ -1522,10 +1443,9 @@
         const game = new Game();
     </script>
 </body>
-</html>
-<!-- '''
+</html>'''
 
 with open('/mnt/agents/output/san-guo-zhi-demo-updated.html', 'w', encoding='utf-8') as f:
     f.write(html_code)
 
-print("文件已保存到 /mnt/agents/output/san-guo-zhi-demo-updated.html") -->
+print("文件已保存到 /mnt/agents/output/san-guo-zhi-demo-updated.html")
