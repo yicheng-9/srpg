@@ -654,9 +654,7 @@
                 this.lastTime = performance.now();
                 this.animationFrame = null;
                 this.aiStepCount = 0;
-                this.playerQueue = [];      // 玩家存活单位队列（按编号排序）
-                this.enemyQueue = [];       // 敌方存活单位队列（按编号排序）
-                this.nextFaction = 'player'; // 下一行动方（'player' 或 'enemy'）
+                this.currentFaction = 'player'; // 下一行动方（'player' 或 'enemy'）
                 this.riverCells = new Set();
                 this.bridgeCells = new Set();
                 this.terrainColors = {};
@@ -859,27 +857,6 @@
                 logEl.scrollTop = logEl.scrollHeight;
             }
 
-            buildActionOrder() {
-                let players = this.units.filter(u => u.faction === 'player' && !u.dead);
-                let enemies = this.units.filter(u => u.faction === 'enemy' && !u.dead);
-                
-                // 按编号排序，确保始终 p1, p2, ... 和 e1, e2, ...
-                const sortById = (a, b) => {
-                    const numA = parseInt(a.id.slice(1), 10);
-                    const numB = parseInt(b.id.slice(1), 10);
-                    return numA - numB;
-                };
-                players.sort(sortById);
-                enemies.sort(sortById);
-                
-                const order = [];
-                const maxLen = Math.max(players.length, enemies.length);
-                for (let i = 0; i < maxLen; i++) {
-                    if (i < players.length) order.push(players[i]);
-                    if (i < enemies.length) order.push(enemies[i]);
-                }
-                return order;
-            }
             getNextActiveUnit() {
                 for (const u of this.actionOrder) {
                     if (!u.acted && !u.dead) return u;
@@ -888,13 +865,6 @@
             }
 
             startNewRound() {
-                this.playerQueue = this.units
-                    .filter(u => u.faction === 'player' && !u.dead)
-                    .sort((a, b) => a.initOrder - b.initOrder);
-                this.enemyQueue = this.units
-                    .filter(u => u.faction === 'enemy' && !u.dead)
-                    .sort((a, b) => a.initOrder - b.initOrder);
-
                 for (const u of this.units) {
                     u.acted = false;
                     u.hasUsedNormalAttack = false;
@@ -904,52 +874,26 @@
                 this.currentUnit = null;
                 this.pendingMode = null;
                 this.aiStepCount = 0;
-                this.nextFaction = 'player';
+                this.currentFaction = 'player';
                 this.advanceTurn();
             }
+            findNextUnit() {
+                let next = this.units.find(u => u.faction === this.currentFaction && !u.acted && !u.dead);
+                if (next) return next;
 
-            getNextFromQueue() {
-                let unit = null;
-                if (this.nextFaction === 'player') {
-                    while (this.playerQueue.length > 0) {
-                        const u = this.playerQueue.shift();
-                        if (!u.dead) { unit = u; break; }
-                    }
-                    if (unit) {
-                        this.nextFaction = 'enemy';
-                        return unit;
-                    } else {
-                        // 玩家队列空了，如果敌方也没了，直接返回 null 结束回合
-                        if (this.enemyQueue.length === 0) {
-                            return null;
-                        }
-                        // 敌方还有单位，让敌方连续行动
-                        this.nextFaction = 'enemy';
-                        return this.getNextFromQueue();
-                    }
-                } else { // nextFaction === 'enemy'
-                    while (this.enemyQueue.length > 0) {
-                        const u = this.enemyQueue.shift();
-                        if (!u.dead) { unit = u; break; }
-                    }
-                    if (unit) {
-                        this.nextFaction = 'player';
-                        return unit;
-                    } else {
-                        if (this.playerQueue.length === 0) {
-                            return null;
-                        }
-                        this.nextFaction = 'player';
-                        return this.getNextFromQueue();
-                    }
+                const otherFaction = this.currentFaction === 'player' ? 'enemy' : 'player';
+                next = this.units.find(u => u.faction === otherFaction && !u.acted && !u.dead);
+                if (next) {
+                    this.currentFaction = otherFaction;
+                    return next;
                 }
-            } 
+                return null;
+            }
             advanceTurn() {
                 if (this.gameOver) return;
 
-                const nextUnit = this.getNextFromQueue();
+                const nextUnit = this.findNextUnit();
                 if (!nextUnit) {
-                    // 双方队列都空，进入下一回合
                     this.turnCount++;
                     this.log(`=== 第${this.turnCount}回合 ===`, 'system');
                     this.startNewRound();
@@ -957,17 +901,18 @@
                 }
 
                 this.currentUnit = nextUnit;
-                // 重置当前单位的 AP，清空攻击状态（保持原有逻辑）
                 this.currentUnit.curAp = this.currentUnit.apMax;
                 this.currentUnit.hasUsedNormalAttack = false;
                 this.currentUnit.hasUsedAlloutAttack = false;
+                this.selectedUnit = this.currentUnit;
+                this.pendingMode = null;
 
                 if (this.currentUnit.faction === 'player') {
                     this.onPlayerTurn();
                 } else {
                     this.onEnemyTurn();
                 }
-            }
+            }            
             onPlayerTurn() {
                 this.aiBusy = false;
                 this.selectedUnit = this.currentUnit;
@@ -1136,50 +1081,43 @@
 
                 // 已死亡的单位保留原 id 或可忽略
             }
-            endUnitTurn(unit = this.selectedUnit) {
+            endUnitTurn(unit = this.currentUnit) {
                 if (!unit) return;
-                if (unit.dead) {
-                    unit.acted = true;
-                    this.selectedUnit = null;
-                    this.currentUnit = null;
-                    this.pendingMode = null;
-                    if (this.checkGameOver()) return;
-                    this.advanceTurn();
-                    return;
-                }
-                let enemyCount = 0;
-                for (let dy = -1; dy <= 1; dy++) {
-                    for (let dx = -1; dx <= 1; dx++) {
-                        if (dx === 0 && dy === 0) continue;
-                        const u = getUnitAt(this.units, unit.x + dx, unit.y + dy);
-                        if (u && u.faction !== unit.faction && !u.dead) enemyCount++;
-                    }
-                }
-                const heal = unit.curAp - enemyCount;
-                const oldHp = unit.hp;
-                unit.hp = Math.max(0, Math.min(unit.maxHp, unit.hp + heal));
-                const actual = unit.hp - oldHp;
-                if (unit.hp <= 0) {
-                    unit.hp = 0;
-                    unit.dead = true;
-                    unit.deathTime = Date.now();
-                    this.log(`${unit.name} 因压力过大倒下了！`, 'damage');
-                } else if (actual > 0) {
-                    this.log(`${unit.name} 回复${actual}点体力`, 'heal');
-                } else if (actual < 0) {
-                    this.log(`${unit.name} 受到${-actual}点压力伤害！`, 'damage');
-                }
                 if (!unit.dead) {
-                    const inRiver = this.riverCells.has(`${unit.x},${unit.y}`);
-                    const onBridge = this.bridgeCells.has(`${unit.x},${unit.y}`);
-                    if (inRiver && !onBridge) {
-                        unit.hp -= 10;
-                        this.log(`${unit.name} 在河中受到10点溺水伤害！`, 'damage');
-                        if (unit.hp <= 0) {
-                            unit.hp = 0;
-                            unit.dead = true;
-                            unit.deathTime = Date.now();
-                            this.log(`${unit.name} 溺水身亡！`, 'system');
+                    let enemyCount = 0;
+                    for (let dy = -1; dy <= 1; dy++) {
+                        for (let dx = -1; dx <= 1; dx++) {
+                            if (dx === 0 && dy === 0) continue;
+                            const u = getUnitAt(this.units, unit.x + dx, unit.y + dy);
+                            if (u && u.faction !== unit.faction && !u.dead) enemyCount++;
+                        }
+                    }
+                    const heal = unit.curAp - enemyCount;
+                    const oldHp = unit.hp;
+                    unit.hp = Math.max(0, Math.min(unit.maxHp, unit.hp + heal));
+                    const actual = unit.hp - oldHp;
+                    if (unit.hp <= 0) {
+                        unit.hp = 0;
+                        unit.dead = true;
+                        unit.deathTime = Date.now();
+                        this.log(`${unit.name} 因压力过大倒下了！`, 'damage');
+                    } else if (actual > 0) {
+                        this.log(`${unit.name} 回复${actual}点体力`, 'heal');
+                    } else if (actual < 0) {
+                        this.log(`${unit.name} 受到${-actual}点压力伤害！`, 'damage');
+                    }
+                    if (!unit.dead) {
+                        const inRiver = this.riverCells.has(`${unit.x},${unit.y}`);
+                        const onBridge = this.bridgeCells.has(`${unit.x},${unit.y}`);
+                        if (inRiver && !onBridge) {
+                            unit.hp -= 10;
+                            this.log(`${unit.name} 在河中受到10点溺水伤害！`, 'damage');
+                            if (unit.hp <= 0) {
+                                unit.hp = 0;
+                                unit.dead = true;
+                                unit.deathTime = Date.now();
+                                this.log(`${unit.name} 溺水身亡！`, 'system');
+                            }
                         }
                     }
                 }
@@ -1187,10 +1125,12 @@
                 this.selectedUnit = null;
                 this.currentUnit = null;
                 this.pendingMode = null;
-                if (this.checkGameOver()) return;
-                this.advanceTurn();
-            }
 
+                if (!this.gameOver) {
+                    this.currentFaction = (this.currentFaction === 'player') ? 'enemy' : 'player';
+                    this.advanceTurn();
+                }
+            }
             checkGameOver() {
                 const pAlive = this.units.filter(u => u.faction === 'player' && !u.dead).length;
                 const eAlive = this.units.filter(u => u.faction === 'enemy' && !u.dead).length;
@@ -1297,19 +1237,19 @@
                     this.selectedUnit = null;
                     this.currentUnit = null;
                     this.pendingMode = null;
-                    this.advanceTurn();
+                    this.endUnitTurn(unit);
                     return;
                 }
                 const unit = this.currentUnit;
                 if (!unit || unit.dead || unit.acted) {
                     this.aiBusy = false;
-                    this.advanceTurn();
+                    this.endUnitTurn(unit);
                     return;
                 }
                 const targets = this.units.filter(u => u.faction !== unit.faction && !u.dead);
                 if (!targets.length) {
                     this.aiBusy = false;
-                    this.advanceTurn();
+                    this.endUnitTurn(unit);
                     return;
                 }
                 const unitKey = `${unit.x},${unit.y}`;
