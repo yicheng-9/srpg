@@ -865,6 +865,7 @@
             }
 
             startNewRound() {
+                if (this.checkGameOver()) return;
                 for (const u of this.units) {
                     u.acted = false;
                     u.hasUsedNormalAttack = false;
@@ -1006,7 +1007,7 @@
                 }
 
                 this.pendingMode = null;
-                this.checkGameOver();
+                // this.checkGameOver();
                 this.updateUI();
                 this.render();
             }
